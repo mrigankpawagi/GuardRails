@@ -10,7 +10,7 @@
     "Education"
   ],
   "activationEvents": [
-    "onCommand: vsprutor.helloWorld"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -22,9 +22,13 @@
       {
         "command": "vsprutor.CommitTracker",
         "title": "Hello World CommitTracker"
+      },
+      {
+        "command": "vsprutor.NextWordTracker",
+        "title": "Hello World NextWordTracker"
       }
-    ], 
-    "keybindings":[
+    ],
+    "keybindings": [
       {
         "command": "vsprutor.CommitTracker",
         "key": "tab",
@@ -36,20 +40,18 @@
         "when": "inlineSuggestionVisible && !editorReadonly"
       }
     ],
-    "menus": {
-      
-    },
+    "menus": {},
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "vsprutor",
+          "id": "vsprutor-panel",
           "title": "VSPrutor",
           "icon": "icon.svg"
         }
       ]
     },
     "views": {
-      "vsprutor": [
+      "vsprutor-panel": [
         {
           "id": "problemstatement",
           "name": "Problem Statement"
