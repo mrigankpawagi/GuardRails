@@ -93,6 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
 	  
     }
   }, 5000); // Save code from active editor every 5 seconds
+  // TODO: Do we need to modify this functionality? (Like, not save code from every editor? Designate a particular file?)
 
   let disposable = vscode.commands.registerCommand(
     "vsprutor.helloWorld",
