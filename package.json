@@ -1,0 +1,85 @@
+{
+  "name": "vsprutor",
+  "displayName": "VS Prutor",
+  "description": "VSCode Assistant for Prutor",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Education"
+  ],
+  "activationEvents": [
+    "onCommand: vsprutor.helloWorld"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vsprutor.helloWorld",
+        "title": "Hello World"
+      },
+      {
+        "command": "vsprutor.CommitTracker",
+        "title": "Hello World CommitTracker"
+      }
+    ], 
+    "keybindings":[
+      {
+        "command": "vsprutor.CommitTracker",
+        "key": "tab",
+        "when": "inlineSuggestionHasIndentationLessThanTabSize && inlineSuggestionVisible && !editorTabMovesFocus"
+      },
+      {
+        "command": "vsprutor.NextWordTracker",
+        "key": "ctrl+right",
+        "when": "inlineSuggestionVisible && !editorReadonly"
+      }
+    ],
+    "menus": {
+      
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "vsprutor",
+          "title": "VSPrutor",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "vsprutor": [
+        {
+          "id": "problemstatement",
+          "name": "Problem Statement"
+        },
+        {
+          "id": "testcases",
+          "name": "Test Cases"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/glob": "^8.0.1",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@typescript-eslint/eslint-plugin": "^5.49.0",
+    "@typescript-eslint/parser": "^5.49.0",
+    "eslint": "^8.33.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.1.0",
+    "typescript": "^4.9.4",
+    "@vscode/test-electron": "^2.2.2"
+  }
+}
