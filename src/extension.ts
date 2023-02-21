@@ -2,34 +2,45 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as os from "os";
 import * as child_process from "child_process";
+import {
+  minVersions,
+  compareVersion,
+  containsRestrictedCommands,
+  getLabs,
+  loadProblem,
+  ProblemStatementViewProvider,
+} from "./tools";
+import { Problem } from "./types";
+const sqlite3 = require("sqlite3").verbose();
+var fs = require("fs");
 
-const restrictedCommands = [
-  "editor.action.inlineSuggest.commit",
-  "editor.action.inlineSuggest.acceptNextWord",
-];
-// TODO: Deal with editor.action.inlineSuggest.trigger and github.copilot.generate (commands which show the suggestion but don't commit it)
-
-const minVersions: Array<{
-  compiler: string;
-  version: string;
-  output: string;
-}> = [
-  {
-    compiler: "python", // Terminal command (<command> --version)
-    version: "3.6.0", // Minimum version
-    output: "Python", // Name used in output
-  },
-  {
-    compiler: "gcc",
-    version: "4.8.0",
-    output: "gcc",
-  },
-];
-// TODO: - Check for syntax on Mac and Linux
-//       - Ask Prof. Viraj if any other compilers need to be checked
+var snapshot: any;
+var db: any;
 
 // This method is called when your extension is activated
 export function activate(context: vscode.ExtensionContext) {
+  /* INITIALIZE DATABASE */
+  var storageFolder = decodeURIComponent(context.globalStorageUri + "").split(
+    "vscode-userdata:/"
+  )[1];
+  if (!fs.existsSync(storageFolder)) {
+    fs.mkdirSync(storageFolder);
+  }
+  db = new sqlite3.Database(storageFolder + "/vsprutor.db");
+
+  /* Initialize Web View */
+
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const provider_problemStatement = new ProblemStatementViewProvider(
+    context.extensionUri
+  );
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      ProblemStatementViewProvider.viewType,
+      provider_problemStatement
+    )
+  );
+
   /* CHECK FOR RESTRICTED KEYBINDINGS */
 
   const keybindingsPath = path.join(
@@ -84,73 +95,88 @@ export function activate(context: vscode.ExtensionContext) {
     });
   }
 
-  var snapshot = setInterval(function () {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      // Get all the text in editor
-      const text = editor.document.getText();
-      
-	  
-    }
-  }, 5000); // Save code from active editor every 5 seconds
-  // TODO: - Do we need to modify this functionality? (Like, not save code from every editor? Designate a particular file?)
-  //       - Should we consider keystrokes and not time?
+  /* FETCH PROBLEMS */
+  getLabs(provider_problemStatement);
 
   let disposable = vscode.commands.registerCommand(
     "vsprutor.helloWorld",
     () => {
-      vscode.window.showInformationMessage("Hello World from HelloWorld!");
+      vscode.window.showInformationMessage("VSPrutor has been activated!");
     }
   );
 
   context.subscriptions.push(disposable);
 
+  var prevText: string;
+  var currentProblem: Problem;
+
   vscode.commands.registerCommand("vsprutor.CommitTracker", () => {
-    // Do what you want!
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      // Get all the text in editor
+      const text = editor.document.getText();
+      logEntry(currentProblem, text, "editor.action.inlineSuggest.commit");
+      prevText = text;
+    }
+
     vscode.commands.executeCommand("editor.action.inlineSuggest.commit");
   });
   vscode.commands.registerCommand("vsprutor.NextWordTracker", () => {
-    // Do what you want!
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+      // Get all the text in editor
+      const text = editor.document.getText();
+      logEntry(currentProblem, text, "editor.action.inlineSuggest.acceptNextWord");
+      prevText = text;
+    }
     vscode.commands.executeCommand(
       "editor.action.inlineSuggest.acceptNextWord"
     );
   });
+
+  vscode.commands.registerCommand("vsprutor.loadProblem", (problem) => {
+    currentProblem = problem;
+    loadProblem(problem);
+    snapshot = setInterval(function () {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        // Get all the text in editor
+        const text = editor.document.getText();
+
+        if (text !== prevText) { // Don't save if the text hasn't changed
+          logEntry(problem, text);
+          prevText = text;
+        }
+      }
+    }, 5000); // Save code from active editor every 5 seconds
+    // TODO: - Do we need to modify this functionality? (Like, not save code from every editor? Designate a particular file?)
+    //       - Should we consider keystrokes and not time?
+  });
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
-
-function containsRestrictedCommands(keybindings: string) {
-  // Check if the string keybindings contains any of the restricted commands
-  for (let i = 0; i < restrictedCommands.length; i++) {
-    if (keybindings.includes(restrictedCommands[i])) {
-      return true;
-    }
-  }
-  return false;
+export function deactivate() {
+  snapshot.clearInterval();
+  db.close();
 }
 
-function compareVersion(version1: string, version2: string): number {
-  let v1 = version1.split(".").map(Number);
-  let v2 = version2.split(".").map(Number);
-
-  // Remove trailing zeros
-  let i = v1.length;
-  let j = v2.length;
-  while (v1[i - 1] === 0) {
-    i--;
-  }
-  while (v2[j - 1] === 0) {
-    j--;
-  }
-
-  // Compare v1.slice(0, i) and v2.slice(0, j) lexicographically
-  for (let k = 0; k < Math.min(i, j); k++) {
-    if (v1[k] > v2[k]) {
-      return 1;
-    } else if (v1[k] < v2[k]) {
-      return -1;
-    }
-  }
-  return 0;
+function logEntry(problem: Problem, code: string, flag: string = ""){
+  db.serialize(() => {
+    db.run(
+      `CREATE TABLE IF NOT EXISTS L${problem.labid}_P${problem.id} 
+    (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, 
+      time TEXT,
+      code TEXT,
+      flag TEXT
+    )`
+    );
+    db.run(
+      `INSERT INTO L${problem.labid}_P${problem.id}
+     (time, code, flag) VALUES (?, ?, ?)`,
+      Date.now(),
+      code,
+      flag
+    );
+  });
 }

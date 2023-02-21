@@ -40,7 +40,15 @@
         "when": "inlineSuggestionVisible && !editorReadonly"
       }
     ],
-    "menus": {},
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "vsprutor.helloWorld",
+          "group": "inline",
+          "when": "viewItem == problemlist"
+        }
+      ]
+    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -53,8 +61,13 @@
     "views": {
       "vsprutor-panel": [
         {
-          "id": "problemstatement",
-          "name": "Problem Statement"
+          "id": "problemlist",
+          "name": "Problems"
+        },
+        {
+          "id": "problemStatementView",
+          "name": "Problem Statement",
+          "type": "webview"
         },
         {
           "id": "testcases",
@@ -72,16 +85,20 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@types/vscode": "^1.75.0",
     "@types/glob": "^8.0.1",
     "@types/mocha": "^10.0.1",
     "@types/node": "16.x",
+    "@types/vscode": "^1.75.0",
     "@typescript-eslint/eslint-plugin": "^5.49.0",
     "@typescript-eslint/parser": "^5.49.0",
+    "@vscode/test-electron": "^2.2.2",
     "eslint": "^8.33.0",
     "glob": "^8.1.0",
     "mocha": "^10.1.0",
-    "typescript": "^4.9.4",
-    "@vscode/test-electron": "^2.2.2"
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.9",
+    "sqlite3": "^5.1.4"
   }
 }
