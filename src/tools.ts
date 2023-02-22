@@ -31,6 +31,8 @@ export const minVersions: Array<{
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 var provider_problemStatement: ProblemStatementViewProvider; // Extension context passed from activating function to getLabs()
+// eslint-disable-next-line @typescript-eslint/naming-convention
+var provider_execute: ExecuteViewProvider;
 
 export function containsRestrictedCommands(keybindings: string) {
   // Check if the string keybindings contains any of the restricted commands
@@ -68,8 +70,10 @@ export function compareVersion(version1: string, version2: string): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function getLabs(ps_provider: ProblemStatementViewProvider) {
+export async function getLabs(ps_provider: ProblemStatementViewProvider, exec_provider: ExecuteViewProvider) {
   provider_problemStatement = ps_provider;
+  provider_execute = exec_provider;
+
   return fetch(API_ROOT + "/get_labs", {
     method: "POST",
   })
@@ -91,6 +95,7 @@ export async function getLabs(ps_provider: ProblemStatementViewProvider) {
 
 export function loadProblem(problem: Problem) {
   provider_problemStatement.putProblem(problem);
+  provider_execute.start(problem);
 }
 
 class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
@@ -193,7 +198,7 @@ export class ProblemStatementViewProvider
 	}
   private _getHtmlForWebview(webview: vscode.Webview) {
 		// Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
-		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'main.js'));
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'problemStatement.js'));
 
 		return `<!DOCTYPE html>
 			<html lang="en">
@@ -205,6 +210,91 @@ export class ProblemStatementViewProvider
 				<h3 id="problem-name"></h3>
         <p id="problem-description"></p>
 
+				<script src="${scriptUri}"></script>
+			</body>
+			</html>`;
+	}
+}
+
+export class ExecuteViewProvider
+  implements vscode.WebviewViewProvider
+{
+  public static readonly viewType = "executeView";
+
+  private _view?: vscode.WebviewView;
+
+  private activeProblem?: Problem;
+
+  constructor(
+		private readonly _extensionUri: vscode.Uri,
+	) { }
+
+  public resolveWebviewView(webviewView: vscode.WebviewView) {
+    this._view = webviewView;
+    
+		webviewView.webview.options = {
+			// Allow scripts in the webview
+			enableScripts: true,
+
+			localResourceRoots: [
+				this._extensionUri
+			]
+		};
+
+    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+
+    
+		webviewView.webview.onDidReceiveMessage(data => {
+			switch (data.type) {
+				case 'input':
+					{
+            vscode.commands.executeCommand(
+              "vsprutor.execute",
+              data.language, data.value, this.activeProblem
+            );
+						break;
+					}
+			}
+		});
+    
+  }
+  public start(problem: Problem) {
+    this.activeProblem = problem;
+		if (this._view) {
+			this._view.webview.postMessage({ type: "start" });
+		}
+	}
+  public pushOutput(output: string) {
+		if (this._view) {
+			this._view.webview.postMessage({ type: "output", value: output });
+		}
+	}
+  private _getHtmlForWebview(webview: vscode.Webview) {
+		// Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'execute.js'));
+		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'execute.css'));
+
+		return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<link href="${styleUri}" rel="stylesheet">
+			</head>
+			<body>
+        <main style="display: none;">
+          <b>Language</b>
+          <select id="language" value="python">
+            <option value="python">Python</option>
+            <option value="c">C</option>
+          </select>
+          <b>Input (STDIN)</b>
+          <textarea id="input"></textarea>
+          <button>Run</button>
+          <br>
+          <b>Output (STDOUT)</b>
+          <textarea id="output" readonly></textarea>
+        </main>
 				<script src="${scriptUri}"></script>
 			</body>
 			</html>`;
