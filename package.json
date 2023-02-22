@@ -72,6 +72,11 @@
         {
           "id": "testcases",
           "name": "Test Cases"
+        },
+        {
+          "id": "executeView",
+          "name": "Execute",
+          "type": "webview"
         }
       ]
     }

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as os from "os";
 import * as child_process from "child_process";
+const spawn = child_process.spawn;
 import {
   minVersions,
   compareVersion,
@@ -9,6 +10,7 @@ import {
   getLabs,
   loadProblem,
   ProblemStatementViewProvider,
+  ExecuteViewProvider,
 } from "./tools";
 import { Problem } from "./types";
 const sqlite3 = require("sqlite3").verbose();
@@ -38,6 +40,15 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.window.registerWebviewViewProvider(
       ProblemStatementViewProvider.viewType,
       provider_problemStatement
+    )
+  );
+
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const provider_execute = new ExecuteViewProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      ExecuteViewProvider.viewType,
+      provider_execute
     )
   );
 
@@ -96,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   /* FETCH PROBLEMS */
-  getLabs(provider_problemStatement);
+  getLabs(provider_problemStatement, provider_execute);
 
   let disposable = vscode.commands.registerCommand(
     "vsprutor.helloWorld",
@@ -126,7 +137,11 @@ export function activate(context: vscode.ExtensionContext) {
     if (editor) {
       // Get all the text in editor
       const text = editor.document.getText();
-      logEntry(currentProblem, text, "editor.action.inlineSuggest.acceptNextWord");
+      logEntry(
+        currentProblem,
+        text,
+        "editor.action.inlineSuggest.acceptNextWord"
+      );
       prevText = text;
     }
     vscode.commands.executeCommand(
@@ -143,15 +158,86 @@ export function activate(context: vscode.ExtensionContext) {
         // Get all the text in editor
         const text = editor.document.getText();
 
-        if (text !== prevText) { // Don't save if the text hasn't changed
+        if (text !== prevText) {
+          // Don't save if the text hasn't changed
           logEntry(problem, text);
           prevText = text;
         }
       }
     }, 5000); // Save code from active editor every 5 seconds
     // TODO: - Do we need to modify this functionality? (Like, not save code from every editor? Designate a particular file?)
-    //       - Should we consider keystrokes and not time?
+    //       - Should we consider keystrokes and not time? (How do we implement it?)
   });
+
+  vscode.commands.registerCommand(
+    "vsprutor.execute",
+    (lang: string, input: string, problem: Problem) => {
+      // TODO: TEST THIS FUNCTION ON OTHER OPERATING SYSTEMS!
+
+      var currentlyOpenTabfilePath =
+        vscode.window.activeTextEditor?.document.uri.fsPath;
+
+      if (!currentlyOpenTabfilePath) {
+        vscode.window.showErrorMessage("Please open a file before executing.");
+        return;
+      }
+
+      var program =  vscode.window.activeTextEditor?.document.getText();
+      var runTerminal;
+      switch (lang) {
+        case "python":
+          runTerminal = spawn("python", [currentlyOpenTabfilePath!]);
+          var output = "";
+
+          runTerminal.stdout.on("data", (data) => {
+            output += data;
+          });
+
+          runTerminal.stdin.write(input);
+          runTerminal.stdin.end();
+
+          runTerminal.on("close", (code) => {
+            // code = Exit code during compilation
+            logExecution(problem, program!, output, code!);
+            provider_execute.pushOutput(output);
+          });
+          break;
+        case "c":
+          runTerminal = spawn("gcc", [currentlyOpenTabfilePath!]);
+          runTerminal.stdout.on("data", (data) => {
+            output += data;
+          });
+
+          runTerminal.on("close", (code) => {
+            // code = Exit code during compilation
+
+            if (code === 0) {
+              // Compilation successful
+              runTerminal = spawn("a.exe"); // TODO: modify for other operating systems!
+              var output = "";
+
+              runTerminal.stdout.on("data", (data) => {
+                output += data;
+              });
+
+              runTerminal.stdin.write(input);
+              runTerminal.stdin.end();
+
+              runTerminal.on("close", (code) => {
+                // code = Exit code during execution
+                logExecution(problem, program!, output, code!);
+                provider_execute.pushOutput(output);
+              });
+            } else {
+              // Compilation failed
+              logExecution(problem, program!, "", code!);
+            }
+          });
+
+          break;
+      }
+    }
+  );
 }
 
 // This method is called when your extension is deactivated
@@ -160,7 +246,7 @@ export function deactivate() {
   db.close();
 }
 
-function logEntry(problem: Problem, code: string, flag: string = ""){
+function logEntry(problem: Problem, code: string, flag: string = "") {
   db.serialize(() => {
     db.run(
       `CREATE TABLE IF NOT EXISTS L${problem.labid}_P${problem.id} 
@@ -180,3 +266,28 @@ function logEntry(problem: Problem, code: string, flag: string = ""){
     );
   });
 }
+
+function logExecution(problem: Problem, program: string, output: string, exitCode: number) {
+  db.serialize(() => {
+    db.run(
+      `CREATE TABLE IF NOT EXISTS L${problem.labid}_P${problem.id}_exec 
+    (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, 
+      time TEXT,
+      code TEXT,
+      output TEXT,
+      exitCode INTEGER
+    )`
+    );
+    db.run(
+      `INSERT INTO L${problem.labid}_P${problem.id}_exec
+     (time, code, output, exitCode) VALUES (?, ?, ?, ?)`,
+      Date.now(),
+      program,
+      output,
+      exitCode
+    );
+  });
+}
+// TODO: - Should we also store the language? 
+//       - Should language be fixed by the instructor for each lab/problem?
