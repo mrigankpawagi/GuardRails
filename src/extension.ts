@@ -444,7 +444,7 @@ function logTest(
     );
     db.run(
       `INSERT INTO L${problem.labid}_P${problem.id}_tests
-     (time, code, expectedOutout, output, result) VALUES (?, ?, ?, ?, ?)`,
+     (time, code, expectedOutput, output, result) VALUES (?, ?, ?, ?, ?)`,
       Date.now(),
       program,
       testcase.correctOutput,
