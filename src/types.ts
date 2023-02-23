@@ -3,6 +3,7 @@ export interface Problem{
     name: string;
     description: string;
     labid: number;
+    testcases: Array<Testcase>;
 }
 
 export interface Lab{
@@ -10,3 +11,11 @@ export interface Lab{
     name: string;
     problems: Array<Problem>;
 }
+
+export interface Testcase{
+    id: number;
+    input: string;
+    correctOutput: string;
+    output: string;
+    status: string;
+};

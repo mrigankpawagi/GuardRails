@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 const fetch = require("node-fetch");
-import { Problem, Lab } from "./types";
+import { Problem, Lab, Testcase } from "./types";
 
 const API_ROOT = "http://127.0.0.1:5000"; // Development Environment
 
@@ -33,6 +33,8 @@ export const minVersions: Array<{
 var provider_problemStatement: ProblemStatementViewProvider; // Extension context passed from activating function to getLabs()
 // eslint-disable-next-line @typescript-eslint/naming-convention
 var provider_execute: ExecuteViewProvider;
+// eslint-disable-next-line @typescript-eslint/naming-convention
+var provider_testCases: TestCasesViewProvider;
 
 export function containsRestrictedCommands(keybindings: string) {
   // Check if the string keybindings contains any of the restricted commands
@@ -70,9 +72,10 @@ export function compareVersion(version1: string, version2: string): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function getLabs(ps_provider: ProblemStatementViewProvider, exec_provider: ExecuteViewProvider) {
+export async function getLabs(ps_provider: ProblemStatementViewProvider, exec_provider: ExecuteViewProvider, tc_provider: TestCasesViewProvider) {
   provider_problemStatement = ps_provider;
   provider_execute = exec_provider;
+  provider_testCases = tc_provider;
 
   return fetch(API_ROOT + "/get_labs", {
     method: "POST",
@@ -96,6 +99,7 @@ export async function getLabs(ps_provider: ProblemStatementViewProvider, exec_pr
 export function loadProblem(problem: Problem) {
   provider_problemStatement.putProblem(problem);
   provider_execute.start(problem);
+  provider_testCases.start(problem);
 }
 
 class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
@@ -294,6 +298,103 @@ export class ExecuteViewProvider
           <br>
           <b>Output (STDOUT)</b>
           <textarea id="output" readonly></textarea>
+        </main>
+				<script src="${scriptUri}"></script>
+			</body>
+			</html>`;
+	}
+}
+
+
+export class TestCasesViewProvider
+  implements vscode.WebviewViewProvider
+{
+  public static readonly viewType = "testcasesView";
+
+  private _view?: vscode.WebviewView;
+
+  private activeProblem?: Problem;
+
+  constructor(
+		private readonly _extensionUri: vscode.Uri,
+	) { }
+
+  public resolveWebviewView(webviewView: vscode.WebviewView) {
+    this._view = webviewView;
+    
+		webviewView.webview.options = {
+			// Allow scripts in the webview
+			enableScripts: true,
+
+			localResourceRoots: [
+				this._extensionUri
+			]
+		};
+
+    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+
+    
+		webviewView.webview.onDidReceiveMessage(data => {
+			switch (data.type) {
+				case 'run':
+          {
+            vscode.commands.executeCommand(
+              "vsprutor.test",
+              data.value, this.activeProblem
+            ); 
+            vscode.commands.executeCommand(
+              "vsprutor.test",
+              data.value, this.activeProblem
+            );
+            break;
+          }
+			}
+		});
+    
+  }
+  public start(problem: Problem) {
+    this.activeProblem = problem;
+ 
+		if (this._view) {
+			this._view.webview.postMessage({ type: "start", value: problem.testcases });
+		}
+	}
+  public update(testcases: Array<Testcase>) { 
+
+    // console.log(testcases);
+
+		if (this._view) {
+			this._view.webview.postMessage({ type: "update", value: testcases });
+		}
+	}
+
+  private _getHtmlForWebview(webview: vscode.Webview) {
+		// Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
+		const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'testcases.js'));
+		const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'testcases.css'));
+
+		return `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<link href="${styleUri}" rel="stylesheet">
+			</head>
+			<body>
+        <main style="display: none;">
+          <b>Visible Test Cases</b>
+          <br>
+          <table></table>    
+          <b id="result"></b>
+          <br>
+          <br>
+          <select id="language" value="python">
+            <option value="python">Python</option>
+            <option value="c">C</option>
+          </select>
+          <button id="runVisible">Run</button>
+          <br>
+          <button>Run Hidden Test Cases</button>
         </main>
 				<script src="${scriptUri}"></script>
 			</body>

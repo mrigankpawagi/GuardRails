@@ -11,8 +11,9 @@ import {
   loadProblem,
   ProblemStatementViewProvider,
   ExecuteViewProvider,
+  TestCasesViewProvider,
 } from "./tools";
-import { Problem } from "./types";
+import { Problem, Testcase } from "./types";
 const sqlite3 = require("sqlite3").verbose();
 var fs = require("fs");
 
@@ -48,7 +49,18 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       ExecuteViewProvider.viewType,
-      provider_execute
+      provider_execute,
+      { webviewOptions: { retainContextWhenHidden: true } }
+    )
+  );
+
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const provider_testcases = new TestCasesViewProvider(context.extensionUri);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(
+      TestCasesViewProvider.viewType,
+      provider_testcases,
+      { webviewOptions: { retainContextWhenHidden: true } }
     )
   );
 
@@ -107,7 +119,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   /* FETCH PROBLEMS */
-  getLabs(provider_problemStatement, provider_execute);
+  getLabs(provider_problemStatement, provider_execute, provider_testcases);
 
   let disposable = vscode.commands.registerCommand(
     "vsprutor.helloWorld",
@@ -152,6 +164,7 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.registerCommand("vsprutor.loadProblem", (problem) => {
     currentProblem = problem;
     loadProblem(problem);
+
     snapshot = setInterval(function () {
       const editor = vscode.window.activeTextEditor;
       if (editor) {
@@ -182,7 +195,7 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      var program =  vscode.window.activeTextEditor?.document.getText();
+      var program = vscode.window.activeTextEditor?.document.getText();
       var runTerminal;
       switch (lang) {
         case "python":
@@ -190,7 +203,7 @@ export function activate(context: vscode.ExtensionContext) {
           var output = "";
 
           runTerminal.stdout.on("data", (data) => {
-            output += data;
+            output += data.toString().replace(/\r\n/g, "\n");
           });
 
           runTerminal.stdin.write(input);
@@ -205,7 +218,7 @@ export function activate(context: vscode.ExtensionContext) {
         case "c":
           runTerminal = spawn("gcc", [currentlyOpenTabfilePath!]);
           runTerminal.stdout.on("data", (data) => {
-            output += data;
+            output += data.toString().replace(/\r\n/g, "\n");
           });
 
           runTerminal.on("close", (code) => {
@@ -217,7 +230,7 @@ export function activate(context: vscode.ExtensionContext) {
               var output = "";
 
               runTerminal.stdout.on("data", (data) => {
-                output += data;
+                output += data.toString().replace(/\r\n/g, "\n");
               });
 
               runTerminal.stdin.write(input);
@@ -236,6 +249,120 @@ export function activate(context: vscode.ExtensionContext) {
 
           break;
       }
+    }
+  );
+
+  vscode.commands.registerCommand(
+    "vsprutor.test",
+    (lang: string, problem: Problem) => {
+      var currentlyOpenTabfilePath =
+        vscode.window.activeTextEditor?.document.uri.fsPath;
+
+      if (!currentlyOpenTabfilePath) {
+        vscode.window.showErrorMessage("Please open a file before executing.");
+        return;
+      }
+
+      var program = vscode.window.activeTextEditor?.document.getText();
+
+      // var counter = 0;
+
+      problem.testcases.forEach((testcase) => {
+        var runTerminal;
+        switch (lang) {
+          case "python":
+            runTerminal = spawn("python", [currentlyOpenTabfilePath!]);
+            var output = "";
+
+            runTerminal.stdout.on("data", (data) => {
+              // Replace all \r\n with \n
+              output += data.toString().replace(/\r\n/g, "\n");
+            });
+
+            runTerminal.stdin.write(testcase.input);
+            runTerminal.stdin.end();
+
+            runTerminal.on("close", (code) => {
+              // code = Exit code during compilation
+              // logExecution(problem, program!, output, code!);
+              testcase.output = output.trim(); // Should we trim the output in general?
+              if(code === 0){
+                testcase.status = testcase.output === testcase.correctOutput ? "Correct" : "Incorrect";
+              }
+              else{
+                testcase.status = "Error";
+              }
+              // counter += 1;
+              // if(counter === problem.testcases.length){
+              //   provider_testcases.update(problem.testcases);
+              // }
+              provider_testcases.update(problem.testcases);
+              logTest(problem, testcase, program!);
+            });
+            break;
+          case "c":
+            // TODO: C Execution is very unstable and inconsistent!
+
+
+            runTerminal = spawn("gcc", [currentlyOpenTabfilePath!]);
+            runTerminal.stdout.on("data", (data) => {
+              output += data.toString().replace(/\r\n/g, "\n");
+            });
+
+            runTerminal.on("close", (code) => {
+              // code = Exit code during compilation
+
+              if (code === 0) {
+                // Compilation successful
+                runTerminal = spawn("a.exe"); // TODO: modify for other operating systems!
+                var output = "";
+
+                runTerminal.stdout.on("data", (data) => {
+                  output += data.toString().replace(/\r\n/g, "\n");
+                });
+
+                runTerminal.stdin.write(testcase.input);
+                runTerminal.stdin.end();
+
+                runTerminal.on("close", (code) => {
+                  // code = Exit code during execution
+                  // logExecution(problem, program!, output, code!);
+                  // provider_execute.pushOutput(output);
+                  testcase.output = output.trim(); // Should we trim the output in general?;
+                  if(code === 0){
+                    testcase.status = testcase.output === testcase.correctOutput ? "Correct" : "Incorrect";
+                  }
+                  else{
+                    testcase.status = "Error";
+                  }
+
+                  // counter += 1; console.log(counter, problem.testcases.length, "B");
+                  // if(counter === problem.testcases.length){
+                  //   provider_testcases.update(problem.testcases);
+                  // }
+                  provider_testcases.update(problem.testcases);
+                  logTest(problem, testcase, program!);
+                });
+              } else {
+                // Compilation failed
+                // logExecution(problem, program!, "", code!);
+                testcase.output = "";
+                testcase.status = "Error";
+                // counter += 1; console.log(counter, problem.testcases.length, "A");
+                // if(counter === problem.testcases.length){
+                //   provider_testcases.update(problem.testcases);
+                // }
+                provider_testcases.update(problem.testcases);
+                logTest(problem, testcase, program!);
+              }
+            });
+
+            break;
+        }
+      });
+
+      // TODO: Find a better way to await all executions!
+
     }
   );
 }
@@ -267,7 +394,12 @@ function logEntry(problem: Problem, code: string, flag: string = "") {
   });
 }
 
-function logExecution(problem: Problem, program: string, output: string, exitCode: number) {
+function logExecution(
+  problem: Problem,
+  program: string,
+  output: string,
+  exitCode: number
+) {
   db.serialize(() => {
     db.run(
       `CREATE TABLE IF NOT EXISTS L${problem.labid}_P${problem.id}_exec 
@@ -289,5 +421,34 @@ function logExecution(problem: Problem, program: string, output: string, exitCod
     );
   });
 }
-// TODO: - Should we also store the language? 
+// TODO: - Should we also store the language?
 //       - Should language be fixed by the instructor for each lab/problem?
+
+function logTest(
+  problem: Problem,
+  testcase: Testcase,
+  program: string
+) {
+  db.serialize(() => {
+    db.run(
+      `CREATE TABLE IF NOT EXISTS L${problem.labid}_P${problem.id}_tests 
+    (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, 
+      time TEXT,
+      code TEXT,
+      expectedOutput TEXT,
+      output TEXT,
+      result INTEGER
+    )`
+    );
+    db.run(
+      `INSERT INTO L${problem.labid}_P${problem.id}_tests
+     (time, code, expectedOutout, output, result) VALUES (?, ?, ?, ?, ?)`,
+      Date.now(),
+      program,
+      testcase.correctOutput,
+      testcase.output,
+      testcase.status
+    );
+  });
+}
