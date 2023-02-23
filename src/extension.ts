@@ -40,7 +40,8 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       ProblemStatementViewProvider.viewType,
-      provider_problemStatement
+      provider_problemStatement,
+      { webviewOptions: { retainContextWhenHidden: true } }
     )
   );
 
