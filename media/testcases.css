@@ -5,6 +5,7 @@ table {
 td{
     border: 1px solid white;
     width: 25%;
+    white-space: pre-line;
 }
 table tr:first-child{
     text-align: center;
