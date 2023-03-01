@@ -266,13 +266,10 @@ export function activate(context: vscode.ExtensionContext) {
 
       var program = vscode.window.activeTextEditor?.document.getText();
 
-      // var counter = 0;
-
-      problem.testcases.forEach((testcase) => {
-        var runTerminal;
-        switch (lang) {
-          case "python":
-            runTerminal = spawn("python", [currentlyOpenTabfilePath!]);
+      switch (lang) {
+        case "python":
+          problem.testcases.forEach((testcase) => {
+            var runTerminal = spawn("python", [currentlyOpenTabfilePath!]);
             var output = "";
 
             runTerminal.stdout.on("data", (data) => {
@@ -285,37 +282,32 @@ export function activate(context: vscode.ExtensionContext) {
 
             runTerminal.on("close", (code) => {
               // code = Exit code during compilation
-              // logExecution(problem, program!, output, code!);
               testcase.output = output.trim(); // Should we trim the output in general?
-              if(code === 0){
-                testcase.status = testcase.output === testcase.correctOutput ? "Correct" : "Incorrect";
-              }
-              else{
+              if (code === 0) {
+                testcase.status =
+                  testcase.output === testcase.correctOutput
+                    ? "Correct"
+                    : "Incorrect";
+              } else {
                 testcase.status = "Error";
               }
-              // counter += 1;
-              // if(counter === problem.testcases.length){
-              //   provider_testcases.update(problem.testcases);
-              // }
               provider_testcases.update(problem.testcases);
               logTest(problem, testcase, program!);
             });
-            break;
-          case "c":
-            // TODO: C Execution is very unstable and inconsistent!
+          });
+          break;
 
+        case "c":
+          var runTerminal = spawn("gcc", [currentlyOpenTabfilePath!]);
 
-            runTerminal = spawn("gcc", [currentlyOpenTabfilePath!]);
-            runTerminal.stdout.on("data", (data) => {
-              output += data.toString().replace(/\r\n/g, "\n");
-            });
+          runTerminal.on("close", (code) => {
+            // code = Exit code during compilation
 
-            runTerminal.on("close", (code) => {
-              // code = Exit code during compilation
+            if (code === 0) {
+              // Compilation successful
 
-              if (code === 0) {
-                // Compilation successful
-                runTerminal = spawn("a.exe"); // TODO: modify for other operating systems!
+              problem.testcases.forEach((testcase) => {
+                var runTerminal = spawn("a.exe"); // TODO: modify for other operating systems!
                 var output = "";
 
                 runTerminal.stdout.on("data", (data) => {
@@ -327,43 +319,31 @@ export function activate(context: vscode.ExtensionContext) {
 
                 runTerminal.on("close", (code) => {
                   // code = Exit code during execution
-                  // logExecution(problem, program!, output, code!);
-                  // provider_execute.pushOutput(output);
-                  testcase.output = output.trim(); // Should we trim the output in general?;
-                  if(code === 0){
-                    testcase.status = testcase.output === testcase.correctOutput ? "Correct" : "Incorrect";
-                  }
-                  else{
+                  testcase.output = output.trim(); // Should we trim the output in general?
+                  if (code === 0) {
+                    testcase.status =
+                      testcase.output === testcase.correctOutput
+                        ? "Correct"
+                        : "Incorrect";
+                  } else {
                     testcase.status = "Error";
                   }
-
-                  // counter += 1; console.log(counter, problem.testcases.length, "B");
-                  // if(counter === problem.testcases.length){
-                  //   provider_testcases.update(problem.testcases);
-                  // }
                   provider_testcases.update(problem.testcases);
                   logTest(problem, testcase, program!);
                 });
-              } else {
-                // Compilation failed
-                // logExecution(problem, program!, "", code!);
-                testcase.output = "";
+              });
+            } else {
+              // Compilation failed
+              problem.testcases.forEach((testcase) => {
                 testcase.status = "Error";
-                // counter += 1; console.log(counter, problem.testcases.length, "A");
-                // if(counter === problem.testcases.length){
-                //   provider_testcases.update(problem.testcases);
-                // }
                 provider_testcases.update(problem.testcases);
                 logTest(problem, testcase, program!);
-              }
-            });
+              });
+            }
+          });
 
-            break;
-        }
-      });
-
-      // TODO: Find a better way to await all executions!
-
+          break;
+      }
     }
   );
 }
@@ -425,11 +405,7 @@ function logExecution(
 // TODO: - Should we also store the language?
 //       - Should language be fixed by the instructor for each lab/problem?
 
-function logTest(
-  problem: Problem,
-  testcase: Testcase,
-  program: string
-) {
+function logTest(problem: Problem, testcase: Testcase, program: string) {
   db.serialize(() => {
     db.run(
       `CREATE TABLE IF NOT EXISTS L${problem.labid}_P${problem.id}_tests 

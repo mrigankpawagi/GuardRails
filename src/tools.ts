@@ -341,10 +341,6 @@ export class TestCasesViewProvider
             vscode.commands.executeCommand(
               "vsprutor.test",
               data.value, this.activeProblem
-            ); 
-            vscode.commands.executeCommand(
-              "vsprutor.test",
-              data.value, this.activeProblem
             );
             break;
           }
