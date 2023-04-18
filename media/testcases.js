@@ -50,7 +50,7 @@ function populate(data) {
             </tr>
         `;
         countCorrect += e.status === "Correct" ? 1 : 0;
-        document.querySelector("#result").innerHTML = `${countCorrect} out ${data.length} test cases passed.`;
+        document.querySelector("#result").innerHTML = `${countCorrect} out of ${data.length} test cases passed.`;
         if (countCorrect === data.length) {
             document.querySelector("#result").classList.add("correct");
         }

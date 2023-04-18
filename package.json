@@ -14,6 +14,35 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Setup",
+      "properties": {
+        "vsprutor.server": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "URL of the Prutor server"
+        },
+        "vsprutor.username": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Username of student account"
+        },
+        "vsprutor.password": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "description": "Password of student account"
+        }
+      }
+    },
     "commands": [
       {
         "command": "vsprutor.helloWorld",
@@ -105,6 +134,7 @@
   },
   "dependencies": {
     "node-fetch": "^2.6.9",
+    "node-html-parser": "^6.1.5",
     "sqlite3": "^5.1.4"
   }
 }

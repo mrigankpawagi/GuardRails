@@ -5,7 +5,6 @@
         document.querySelector("#problem-name").innerText = problem.name;
         document.querySelector("#problem-description").innerText = problem.description;
     });
-
     
 }());
 
