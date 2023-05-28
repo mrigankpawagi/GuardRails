@@ -78,7 +78,10 @@ export function compareVersion(version1: string, version2: string): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function getLabs(ps_provider: ProblemStatementViewProvider, exec_provider: ExecuteViewProvider, tc_provider: TestCasesViewProvider
+export async function getLabs(
+  ps_provider: ProblemStatementViewProvider,
+  exec_provider: ExecuteViewProvider,
+  tc_provider: TestCasesViewProvider
 ) {
   provider_problemStatement = ps_provider;
   provider_execute = exec_provider;
@@ -87,29 +90,144 @@ export async function getLabs(ps_provider: ProblemStatementViewProvider, exec_pr
   var authCookie = await loginAndReturnCookie();
 
   if (authCookie) {
-    let fetchCmd = `curl -H "Cookie:${authCookie}" -X GET "${API_ROOT}/codebook"`;
-
-    child_process.exec(fetchCmd, (error: any, stdout: any, stderr: any) => {
-      if (error) {
-        console.log(`error: ${error.message}`);
-        vscode.window.showInformationMessage(
-          "Error fetching problems. Please try again later."
+    let fetchCmdOngoing = `curl -H "Cookie:${authCookie}" -X GET "${API_ROOT}/home"`;
+    child_process.exec(
+      fetchCmdOngoing,
+      (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+          vscode.window.showInformationMessage(
+            "Error fetching ongoing lab. Please try again later."
+          );
+          return false;
+        }
+        vscode.window.registerTreeDataProvider(
+          "ongoingLab",
+          new TreeDataProvider(extractOngoingLabData(stdout))
         );
-        return false;
+        return true;
       }
-      vscode.window.registerTreeDataProvider(
-        "problemlist",
-        new TreeDataProvider(extractLabData(stdout))
-      );
-      return true;
-    });
+    );
+
+    let fetchCmdCodeBook = `curl -H "Cookie:${authCookie}" -X GET "${API_ROOT}/codebook"`;
+    child_process.exec(
+      fetchCmdCodeBook,
+      (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+          vscode.window.showInformationMessage(
+            "Error fetching CodeBook. Please try again later."
+          );
+          return false;
+        }
+        vscode.window.registerTreeDataProvider(
+          "codebook",
+          new TreeDataProvider(extractLabDataFromCodeBook(stdout))
+        );
+        return true;
+      }
+    );
   }
 }
 
-export function loadProblem(problem: Problem) {
-  provider_problemStatement.putProblem(problem);
-  provider_execute.start(problem);
-  provider_testCases.start(problem);
+export async function loadProblem(problem: Problem) {
+  var authCookie = await loginAndReturnCookie();
+
+  if (authCookie) {
+    let fetchCmd = `curl -H "Cookie:${authCookie}" -X GET "${API_ROOT}/codebook/page?id=${problem.id}"`;
+    child_process.exec(
+      fetchCmd,
+      async (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+          vscode.window.showInformationMessage(
+            "Error loading problem. Please try again later."
+          );
+          return false;
+        }
+
+        var probData = JSON.parse(stdout);
+
+        // Open the code template in a new editor
+        const document = await vscode.workspace.openTextDocument({
+          content: Buffer.from(probData.code, "base64").toString("utf8"),
+        });
+        vscode.window.showTextDocument(document);
+
+        problem.description = probData.statement;
+        problem.environment = probData.env.name;
+
+        fetchTestcases(problem);
+
+        provider_problemStatement.putProblem(problem);
+        provider_execute.start(problem);
+
+        return true;
+      }
+    );
+  }
+}
+
+async function fetchTestcases(problem: Problem) {
+  var authCookie = await loginAndReturnCookie();
+  
+    if (authCookie) {
+      let fetchCmd = `curl -H "Cookie:${authCookie}" -X POST "${API_ROOT}/evaluate/page" -d "assignment_id=${problem.id}"`;
+      child_process.exec(
+        fetchCmd,
+        async (error: any, stdout: any, stderr: any) => {
+          if (error) {
+            console.log(`error: ${error.message}`);
+            vscode.window.showInformationMessage(
+              "Error fetching testcases. Please try again later."
+            );
+          }
+
+          JSON.parse(stdout.replace(/\n/g, "\\\\n")).results.forEach((testcase: any) => {
+            problem.testcases.push({
+              id: testcase.id,
+              input: testcase.input.trim(),
+              correctOutput: testcase.expected.trim(),
+              output: "",
+              status: "",
+            });
+          });
+
+          provider_testCases.start(problem);
+        }
+      );
+    }
+}
+
+export async function evaluate(problem: Problem, program: string){
+  var authCookie = await loginAndReturnCookie();
+  if(authCookie){
+    let fetchCmd = `curl -H "Cookie:${authCookie}" -X POST "${API_ROOT}/compile" -d "assignment_id=${problem.id}&code=${encodeURIComponent(program)}&env=${problem.environment}"`;
+    child_process.exec(
+      fetchCmd,
+      async (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+          vscode.window.showInformationMessage(
+            "Error evaluating program. Please try again later."
+          );
+        }
+        fetchCmd = `curl -H "Cookie:${authCookie}" -X POST "${API_ROOT}/evaluate" -d "assignment_id=${problem.id}&admin=false"`;
+        child_process.exec(
+          fetchCmd,
+          async (error: any, stdout: any, stderr: any) => {
+            if (error) {
+              console.log(`error: ${error.message}`);
+              vscode.window.showInformationMessage(
+                "Error evaluating program. Please try again later."
+              );
+            }
+            provider_testCases.updateEvaluation(JSON.parse(stdout.replace(/\n/g, "\\\\n")).invisible);
+          }
+        );        
+      }
+    );
+  }
 }
 
 class TreeDataProvider implements vscode.TreeDataProvider<TreeItem> {
@@ -265,7 +383,10 @@ export class ExecuteViewProvider implements vscode.WebviewViewProvider {
   public start(problem: Problem) {
     this.activeProblem = problem;
     if (this._view) {
-      this._view.webview.postMessage({ type: "start" });
+      this._view.webview.postMessage({
+        type: "start",
+        environment: problem.environment,
+      });
     }
   }
   public pushOutput(output: string) {
@@ -290,6 +411,7 @@ export class ExecuteViewProvider implements vscode.WebviewViewProvider {
 				<link href="${styleUri}" rel="stylesheet">
 			</head>
 			<body>
+        
         <main style="display: none;">
           <b>Language</b>
           <select id="language" value="python">
@@ -340,6 +462,13 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
           );
           break;
         }
+        case "evaluate": {
+          vscode.commands.executeCommand(
+            "vsprutor.evaluate",
+            this.activeProblem
+          );
+          break;
+        }
       }
     });
   }
@@ -350,6 +479,8 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
       this._view.webview.postMessage({
         type: "start",
         value: problem.testcases,
+        environment: problem.environment,
+        current: problem.current,
       });
     }
   }
@@ -357,7 +488,16 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
     // console.log(testcases);
 
     if (this._view) {
+
       this._view.webview.postMessage({ type: "update", value: testcases });
+    }
+  }
+
+  public updateEvaluation(results: any) {
+    // console.log(results);
+
+    if (this._view) {
+      this._view.webview.postMessage({ type: "updateEvaluation", value: results });
     }
   }
 
@@ -378,6 +518,7 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
 				<link href="${styleUri}" rel="stylesheet">
 			</head>
 			<body>
+      <h3 id="pastProblemWarning" style="display:none">Test cases are not available for past problems.</h3>
         <main style="display: none;">
           <b>Visible Test Cases</b>
           <br>
@@ -391,7 +532,8 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
           </select>
           <button id="runVisible">Run</button>
           <br>
-          <button>Run Hidden Test Cases</button>
+          <button id="evaluate">Run Hidden Test Cases</button>
+          <b id="resultEvalution"></b>
         </main>
 				<script src="${scriptUri}"></script>
 			</body>
@@ -436,7 +578,7 @@ async function loginAndReturnCookie() {
   });
 }
 
-function extractLabData(text: string) {
+function extractLabDataFromCodeBook(text: string) {
   var html = parse(text);
   var labData: Array<Lab> = [];
   html.querySelectorAll(".tree-events > ul > li").forEach((lab, i) => {
@@ -444,12 +586,15 @@ function extractLabData(text: string) {
     var labId = i;
     var problems: Array<Problem> = [];
     lab.querySelectorAll("ul > li").forEach((prob, j) => {
+      var probData = JSON.parse(prob.getAttribute("data-jstree")!);
       problems.push({
         name: prob.innerText.trim(),
-        id: j,
+        id: probData["data"]["id"],
         labid: labId,
         testcases: [],
         description: "",
+        environment: probData["data"]["env"],
+        current: false,
       });
     });
     labData.push({
@@ -458,5 +603,34 @@ function extractLabData(text: string) {
       problems: problems,
     });
   });
+  return labData;
+}
+
+function extractOngoingLabData(text: string) {
+  var html = parse(text);
+  var labData: Array<Lab> = [];
+  var problems: Array<Problem> = [];
+
+  html.querySelectorAll("#eventsnow > table tr").forEach((prob, j) => {
+    problems.push({
+      name: prob.querySelectorAll("th")[0].innerText,
+      id: prob!
+        .querySelector("a")!
+        .getAttribute("href")!
+        .split("/")[2] as any as number,
+      labid: 0,
+      testcases: [],
+      description: "",
+      environment: undefined,
+      current: true,
+    });
+  });
+
+  labData.push({
+    name: html.querySelectorAll("#eventsnow > h2 > span")[0].innerText.trim(),
+    id: 0,
+    problems: problems,
+  });
+
   return labData;
 }

@@ -90,8 +90,12 @@
     "views": {
       "vsprutor-panel": [
         {
-          "id": "problemlist",
-          "name": "Problems"
+          "id": "ongoingLab",
+          "name": "Ongoing Lab"
+        },
+        {
+          "id": "codebook",
+          "name": "Code Book"
         },
         {
           "id": "problemStatementView",

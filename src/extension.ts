@@ -12,6 +12,7 @@ import {
   ProblemStatementViewProvider,
   ExecuteViewProvider,
   TestCasesViewProvider,
+  evaluate
 } from "./tools";
 import { Problem, Testcase } from "./types";
 const sqlite3 = require("sqlite3").verbose();
@@ -188,6 +189,13 @@ export function activate(context: vscode.ExtensionContext) {
     (lang: string, input: string, problem: Problem) => {
       // TODO: TEST THIS FUNCTION ON OTHER OPERATING SYSTEMS!
 
+      if (vscode.window.activeTextEditor?.document.uri.scheme === "untitled") {
+        vscode.window.showErrorMessage(
+          "Please save the file before executing."
+        );
+        return;
+      }
+
       var currentlyOpenTabfilePath =
         vscode.window.activeTextEditor?.document.uri.fsPath;
 
@@ -256,6 +264,14 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.registerCommand(
     "vsprutor.test",
     (lang: string, problem: Problem) => {
+      
+      if (vscode.window.activeTextEditor?.document.uri.scheme === "untitled") {
+        vscode.window.showErrorMessage(
+          "Please save the file before running on test cases."
+        );
+        return;
+      }
+
       var currentlyOpenTabfilePath =
         vscode.window.activeTextEditor?.document.uri.fsPath;
 
@@ -346,6 +362,11 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }
   );
+
+  vscode.commands.registerCommand("vsprutor.evaluate", (problem) => {
+    var program = vscode.window.activeTextEditor?.document.getText();
+    evaluate(problem, program!);
+  });
 }
 
 // This method is called when your extension is deactivated

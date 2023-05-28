@@ -4,6 +4,8 @@ export interface Problem{
     description: string;
     labid: number;
     testcases: Array<Testcase>;
+    environment: string | undefined;
+    current: boolean;
 }
 
 export interface Lab{
