@@ -78,10 +78,7 @@ export function compareVersion(version1: string, version2: string): number {
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-export async function getLabs(
-  ps_provider: ProblemStatementViewProvider,
-  exec_provider: ExecuteViewProvider,
-  tc_provider: TestCasesViewProvider
+export async function getLabs(  ps_provider: ProblemStatementViewProvider,  exec_provider: ExecuteViewProvider,  tc_provider: TestCasesViewProvider
 ) {
   provider_problemStatement = ps_provider;
   provider_execute = exec_provider;

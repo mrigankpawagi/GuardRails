@@ -2,10 +2,12 @@
 
 ## Requirements
 
-### Flask
-You can use pip to install Flask:
+1. Python
 
-    $ pip install Flask
+2. GCC
+
+__Note:__
+VSPrutor is currently supported only on Windows.
 
 ## Usage
 
@@ -13,11 +15,7 @@ You can use pip to install Flask:
 Clone this repository.
 
 ### Step 2
-In the ```/simserver``` directory, start the Flask server:
-
-    $ flask run
-
-This should start a server at ```http://127.0.0.1:5000``` by default. You can change the port by setting the ```API_ROOT``` variable in ```tools.ts```.
+Set `vsprutor.server`, `vsprutor.username` and `vsprutor.password` in _User Settings_.
 
 ### Step 3
 Open the root directory in VSCode. 
