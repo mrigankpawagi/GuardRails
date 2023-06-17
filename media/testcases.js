@@ -58,6 +58,13 @@
         });
     });
 
+    document.querySelector("#submit").addEventListener("click", function () {
+
+        vscode.postMessage({
+            type: 'submit'
+        });
+    });
+
 }());
 
 function populate(data) {

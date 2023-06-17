@@ -146,8 +146,9 @@ export async function loadProblem(problem: Problem) {
         var probData = JSON.parse(stdout);
 
         // Open the code template in a new editor
+
         const document = await vscode.workspace.openTextDocument({
-          content: Buffer.from(probData.code, "base64").toString("utf8"),
+          content: probData.code
         });
         vscode.window.showTextDocument(document);
 
@@ -222,6 +223,26 @@ export async function evaluate(problem: Problem, program: string){
             provider_testCases.updateEvaluation(JSON.parse(stdout.replace(/\n/g, "\\\\n")).invisible);
           }
         );        
+      }
+    );
+  }
+}
+
+export async function submit(problem: Problem, program: string){
+  var authCookie = await loginAndReturnCookie();
+  if(authCookie){
+    let fetchCmd = `curl -H "Cookie:${authCookie}" -X POST "${API_ROOT}/editor/save" -d "assignment_id=${problem.id}&branch_id=0&code=${Buffer.from(program, "utf8").toString("base64")}&trigger=submit"`;
+    child_process.exec(
+      fetchCmd,
+      async (error: any, stdout: any, stderr: any) => {
+        if (error) {
+          console.log(`error: ${error.message}`);
+          vscode.window.showInformationMessage(
+            "Error submitting program. Please try again later."
+          );
+        }
+        vscode.window.showInformationMessage("Program saved and submitted for evaluation.");
+        evaluate(problem, program);     
       }
     );
   }
@@ -466,6 +487,13 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
           );
           break;
         }
+        case "submit": {
+          vscode.commands.executeCommand(
+            "vsprutor.submit",
+            this.activeProblem
+          );
+          break;
+        }
       }
     });
   }
@@ -531,6 +559,10 @@ export class TestCasesViewProvider implements vscode.WebviewViewProvider {
           <br>
           <button id="evaluate">Run Hidden Test Cases</button>
           <b id="resultEvalution"></b>
+          <br>
+          <br>
+          <hr>
+          <button id="submit">Submit</button>
         </main>
 				<script src="${scriptUri}"></script>
 			</body>

@@ -12,7 +12,8 @@ import {
   ProblemStatementViewProvider,
   ExecuteViewProvider,
   TestCasesViewProvider,
-  evaluate
+  evaluate,
+  submit
 } from "./tools";
 import { Problem, Testcase } from "./types";
 const sqlite3 = require("sqlite3").verbose();
@@ -366,6 +367,11 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.registerCommand("vsprutor.evaluate", (problem) => {
     var program = vscode.window.activeTextEditor?.document.getText();
     evaluate(problem, program!);
+  });
+
+  vscode.commands.registerCommand("vsprutor.submit", (problem) => {
+    var program = vscode.window.activeTextEditor?.document.getText();
+    submit(problem, program!);
   });
 }
 

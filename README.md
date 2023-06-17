@@ -6,6 +6,8 @@
 
 2. GCC
 
+3. npm
+
 __Note:__
 VSPrutor is currently supported only on Windows.
 
@@ -13,6 +15,12 @@ VSPrutor is currently supported only on Windows.
 
 ### Step 1
 Clone this repository.
+
+### Step 2
+Install dependencies by running the following command in the root directory:
+```bash
+npm install
+```
 
 ### Step 2
 Set `vsprutor.server`, `vsprutor.username` and `vsprutor.password` in _User Settings_.
