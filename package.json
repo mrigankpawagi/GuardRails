@@ -1,8 +1,14 @@
 {
   "name": "vsprutor",
-  "displayName": "VS Prutor",
+  "displayName": "VSPrutor",
   "description": "VSCode Assistant for Prutor",
-  "version": "0.0.1",
+  "publisher": "MrigankPawagi",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrigankpawagi/VSPrutor"
+  },
+  "icon": "icon.png",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.75.0"
   },
