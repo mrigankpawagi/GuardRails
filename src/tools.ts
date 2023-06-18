@@ -148,7 +148,8 @@ export async function loadProblem(problem: Problem) {
         // Open the code template in a new editor
 
         const document = await vscode.workspace.openTextDocument({
-          content: probData.code
+          language: probData.env.name,
+          content: Buffer.from(probData.code, "base64").toString("utf8"),
         });
         vscode.window.showTextDocument(document);
 

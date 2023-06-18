@@ -67,6 +67,16 @@
         "command": "vsprutor.NextWordTracker",
         "key": "ctrl+right",
         "when": "inlineSuggestionVisible && !editorReadonly"
+      },
+      {
+        "command": "vsprutor.captureCopilotPanel",
+        "key": "ctrl+Enter",
+        "when": "editorTextFocus && github.copilot.activated && !inInteractiveInput && !interactiveEditorFocused"
+      },
+      {
+        "command": "vsprutor.testCaseChecker",
+        "key": "ctrl+shift+oem_2",
+        "when": "github.copilot.activated"
       }
     ],
     "menus": {

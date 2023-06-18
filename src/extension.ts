@@ -21,11 +21,12 @@ var fs = require("fs");
 
 var snapshot: any;
 var db: any;
+var storageFolder: string;
 
 // This method is called when your extension is activated
 export function activate(context: vscode.ExtensionContext) {
   /* INITIALIZE DATABASE */
-  var storageFolder = decodeURIComponent(context.globalStorageUri + "").split(
+  storageFolder = decodeURIComponent(context.globalStorageUri + "").split(
     "vscode-userdata:/"
   )[1];
   if (!fs.existsSync(storageFolder)) {
@@ -137,27 +138,30 @@ export function activate(context: vscode.ExtensionContext) {
   var currentProblem: Problem;
 
   vscode.commands.registerCommand("vsprutor.CommitTracker", () => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      // Get all the text in editor
-      const text = editor.document.getText();
-      logEntry(currentProblem, text, "editor.action.inlineSuggest.commit");
-      prevText = text;
+    if(currentProblem){
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        // Get all the text in editor
+        const text = editor.document.getText();
+        logEntry(currentProblem, text, "editor.action.inlineSuggest.commit");
+        prevText = text;
+      }
     }
-
     vscode.commands.executeCommand("editor.action.inlineSuggest.commit");
   });
   vscode.commands.registerCommand("vsprutor.NextWordTracker", () => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor) {
-      // Get all the text in editor
-      const text = editor.document.getText();
-      logEntry(
-        currentProblem,
-        text,
-        "editor.action.inlineSuggest.acceptNextWord"
-      );
-      prevText = text;
+    if(currentProblem){
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        // Get all the text in editor
+        const text = editor.document.getText();
+        logEntry(
+          currentProblem,
+          text,
+          "editor.action.inlineSuggest.acceptNextWord"
+        );
+        prevText = text;
+      }
     }
     vscode.commands.executeCommand(
       "editor.action.inlineSuggest.acceptNextWord"
@@ -373,6 +377,75 @@ export function activate(context: vscode.ExtensionContext) {
     var program = vscode.window.activeTextEditor?.document.getText();
     submit(problem, program!);
   });
+
+  var textForCopilotPanel: string = "";
+  vscode.commands.registerCommand("vsprutor.captureCopilotPanel", () => {
+
+    const currentEditor = vscode.window.activeTextEditor!;
+    const position = currentEditor.selection.active;
+    textForCopilotPanel = currentEditor.document.getText(new vscode.Range(new vscode.Position(0, 0), position));
+
+    vscode.commands.executeCommand(
+      "github.copilot.generate"
+    );
+  });
+
+  vscode.commands.registerCommand("vsprutor.testCaseChecker", () => {
+    // TODO: Support C as well (currently only supports Python)
+    vscode.window.showInformationMessage(
+      "Starting copilot suggestions trimmer..."
+    );
+
+    // See if the preceding code contains a function and a docstring
+      
+    // Check if a function definition exists before the cursor
+    let defPos = textForCopilotPanel.lastIndexOf("def");
+    if(defPos === -1){
+      vscode.window.showErrorMessage("No function definition found before cursor.");
+      return;
+    }
+    else{
+      var codeContext = textForCopilotPanel.substring(defPos);
+    }
+
+    // Check if a docstring exists after the definition
+    const docMatches = codeContext.match( /('''|""")([\s\S]*?)\1/);
+    if(!docMatches){
+      vscode.window.showErrorMessage("No docstring found after function definition.");
+      return;
+    }
+    else{
+      var docstring = docMatches[2];
+    }
+
+    // Check if the docstring contains a test case
+    const doctestFind = docstring.indexOf(">>>");
+    if(doctestFind === -1){
+      vscode.window.showErrorMessage("No doctest found in docstring.");
+      return;
+    }
+
+    // Check copilot suggestions panel every 5 seconds till the contents are stable
+    var temp = "";
+    var c = setInterval(function () {
+      vscode.window.visibleTextEditors.forEach((editor) => {      
+        if(editor.document.fileName === "GitHub Copilot"){
+          if(temp === editor.document.getText()){
+            // Contents are stable
+            vscode.window.showInformationMessage(
+              "Suggestions captured. Trimming down suggestions based on test cases..."
+            );
+            trimSuggestions(editor.document.getText(), codeContext, editor.viewColumn);
+            clearInterval(c);
+          }
+          else{
+            temp = editor.document.getText();
+          }
+        }
+      });
+    }, 5000);
+    
+  });
 }
 
 // This method is called when your extension is deactivated
@@ -454,5 +527,93 @@ function logTest(problem: Problem, testcase: Testcase, program: string) {
       testcase.output,
       testcase.status
     );
+  });
+}
+
+async function trimSuggestions(suggestions: string, context: string, viewColumn: vscode.ViewColumn){
+  var goodSuggestions: string[] = [];
+  
+  // Number of suggestions
+  var numSuggestions = suggestions.split("=======\n").length - 1;
+  var counter = 0;
+
+  suggestions.split("=======\n").splice(1).map(e => {
+    return e.slice(2 + e.indexOf("\n"));
+  }).forEach((suggestion, i) => {
+    suggestion = suggestion.split("```")[0]; // Some suggestions have a section followed by ``` which should be removed
+
+    // check if copilot suggestion already contains the context
+    if(suggestion.indexOf(context) < 0){
+      // Last line of context is repeated in the suggestion and should be removed
+      //
+      // Observation: If suggestion does not contain context, 
+      // its indentation is somtimes messed up. 
+      // TODO: Fix this indentation issue; UPDATE: A (possibly partial) fix has been implemented below
+
+      // count intend spaces in context
+      var indent = 0;
+      var spaceOrTab = false;
+      const match = context.slice(1 + context.lastIndexOf("\n")).match(/^[ \t]+/);
+      if (match) {
+        indent = match[0].length;
+        spaceOrTab = (match[0][0] === " "); // true if space, false if tab
+      }
+
+      // count intend spaces in suggestion
+      var indent2 = 0;
+      var spaceOrTab2 = false;
+      const match2 = suggestion.match(/^[ \t]+/);
+      if (match2) {
+        indent2 = match2[0].length;
+        spaceOrTab2 = (match2[0][0] === " "); // true if space, false if tab
+      }
+
+      if(indent2 !== indent || spaceOrTab2 !== spaceOrTab){
+        suggestion = ("\n" + suggestion).replace("\n" + (spaceOrTab2 ? " " : "\t").repeat(indent2), 
+                                        "\n" + (spaceOrTab ? " " : "\t").repeat(indent));
+      }
+
+      var modContext = context.slice(0, 1 + context.lastIndexOf("\n")); // remove last line
+
+      suggestion = modContext + suggestion;
+    }
+
+    // create a python file with the suggestion
+    vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/suggest-${i}.py`), 
+      new Uint8Array(Buffer.from(suggestion + 
+        `\n\nif __name__ == "__main__":\n\timport doctest\n\tdoctest.testmod()`
+      ))
+    );
+
+    // run the python file and check if doctest(s) passed (in which case there is no output)
+
+    var runTerminal = spawn("python", [storageFolder + `/suggest-${i}.py`]);
+    var output = "";
+    runTerminal.stdout.on("data", (data) => {
+      // Replace all \r\n with \n
+      output += data.toString().replace(/\r\n/g, "\n");
+    });
+    runTerminal.stdin.end();
+    runTerminal.on("close", async (code) => {
+      // code = Exit code during compilation
+      if(code === 0 && output.trim() === ""){
+        // doctest(s) passed
+        goodSuggestions.push(suggestion);
+      }
+      else{
+        // Bad suggestion
+      }
+
+      counter++;
+      if(counter === numSuggestions){
+        // All suggestions have been processed
+        const document = await vscode.workspace.openTextDocument({
+          content: `Suggestions which satisfy the doctests (${goodSuggestions.length}/${numSuggestions}).\n\n` 
+                    + goodSuggestions.join("\n\n----------\n\n"),
+        });
+        vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
+      }
+
+    });    
   });
 }
