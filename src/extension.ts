@@ -530,7 +530,7 @@ function logTest(problem: Problem, testcase: Testcase, program: string) {
   });
 }
 
-async function trimSuggestions(suggestions: string, context: string, viewColumn: vscode.ViewColumn){
+async function trimSuggestions(suggestions: string, context: string, viewColumn: vscode.ViewColumn | undefined){
   var goodSuggestions: string[] = [];
   
   // Number of suggestions
