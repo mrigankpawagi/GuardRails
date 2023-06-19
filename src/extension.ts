@@ -115,6 +115,9 @@ export function activate(context: vscode.ExtensionContext) {
                 " or higher."
             );
           }
+          else{
+            installDependencies();
+          }
         } else {
           // console.error(`Could not determine ${output} version`);
         }
@@ -530,8 +533,15 @@ function logTest(problem: Problem, testcase: Testcase, program: string) {
   });
 }
 
+function installDependencies(){
+  var runTerminal = spawn("python", ["-m", "pip", "install", "hypothesis", "hypothesis[cli]", "black", "hypothesis[ghostwriter]"]);
+  runTerminal.stdin.end();
+  runTerminal.on("close", async (code) => {});
+}
+
 async function trimSuggestions(suggestions: string, context: string, viewColumn: vscode.ViewColumn | undefined){
   var goodSuggestions: string[] = [];
+  var goodSuggestionsIndex: number[] = [];
   
   // Number of suggestions
   var numSuggestions = suggestions.split("=======\n").length - 1;
@@ -579,7 +589,7 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
     }
 
     // create a python file with the suggestion
-    vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/suggest-${i}.py`), 
+    vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/suggest${i}.py`), 
       new Uint8Array(Buffer.from(suggestion + 
         `\n\nif __name__ == "__main__":\n\timport doctest\n\tdoctest.testmod()`
       ))
@@ -587,7 +597,7 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
 
     // run the python file and check if doctest(s) passed (in which case there is no output)
 
-    var runTerminal = spawn("python", [storageFolder + `/suggest-${i}.py`]);
+    var runTerminal = spawn("python", [storageFolder + `/suggest${i}.py`]);
     var output = "";
     runTerminal.stdout.on("data", (data) => {
       // Replace all \r\n with \n
@@ -596,9 +606,11 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
     runTerminal.stdin.end();
     runTerminal.on("close", async (code) => {
       // code = Exit code during compilation
+
       if(code === 0 && output.trim() === ""){
         // doctest(s) passed
         goodSuggestions.push(suggestion);
+        goodSuggestionsIndex.push(i);
       }
       else{
         // Bad suggestion
@@ -612,8 +624,82 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
                     + goodSuggestions.join("\n\n----------\n\n"),
         });
         vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
+
+        if(goodSuggestions.length > 1){
+          suggestDoctests(goodSuggestions, goodSuggestionsIndex, document);
+        }
       }
 
     });    
+  });
+}
+
+function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number[], document: vscode.TextDocument){
+  // check if type annotations are present for arguments
+  const argumentArea = goodSuggestions[0].split("(")[1].split(")")[0];
+  if((argumentArea.match(/:/g) || []).length < (argumentArea.match(/,/g) || []).length + 1){
+    vscode.window.showErrorMessage("Cannot suggest doctests without type annotations on arguments.");
+    return;
+  }
+  vscode.window.showInformationMessage("Generating doctest suggestion...");
+
+  const argumentBuildUp = argumentArea.split(",").map(e => {
+    return e.split(":")[0].trim();
+  }).join(", ");
+
+  // extract function name
+  var func = goodSuggestions[0].split("(")[0].replace("def", "").trim();
+ 
+  // generate the test file
+  var runTerminal = spawn("hypothesis", ["write", ...goodSuggestionsIndex.map(e => `suggest${e}.${func}`)],
+                          {cwd: storageFolder});
+  var output = "";
+  runTerminal.stdout.on("data", (data) => {
+    // Replace all \r\n with \n
+    output += data.toString().replace(/\r\n/g, "\n");
+  });
+  runTerminal.stdin.end();
+  runTerminal.on("close", async (code) => {
+    var head = output.slice(output.indexOf("@given"), 1 + output.indexOf("\n", output.indexOf("def")));
+    var head0 = head.slice(0, 4 + head.indexOf("def "));
+    var head1 = head.slice(head.indexOf("(", head.indexOf("def")));
+    var program = 
+`import ${goodSuggestionsIndex.map(e => `suggest${e}`).join(", ")}
+from hypothesis import given, strategies as st
+
+fault = None
+
+${head0} test${head1}
+    global fault
+    fault = (${argumentBuildUp})
+    assert ${goodSuggestionsIndex.map(e => `suggest${e}.${func}(${argumentBuildUp})`).join(" == ")}
+
+if __name__ == "__main__":
+    try:
+        test()
+    except AssertionError:
+        print(fault)
+`;
+    vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/test.py`), 
+      new Uint8Array(Buffer.from(program))
+    );
+    
+
+    // Run the test file
+
+    var runTerminal = spawn("python", [storageFolder + `/test.py`]);
+    var testOutput = "";
+    runTerminal.stdout.on("data", (data) => {
+      // Replace all \r\n with \n
+      testOutput += data.toString().replace(/\r\n/g, "\n");
+    });
+    runTerminal.stdin.end();
+    runTerminal.on("close", async (code) => {
+      if(code === 0 && testOutput.trim() !== ""){
+        const parenthesis = testOutput.trim().indexOf("(") < 0;
+        vscode.window.showInformationMessage(`Suggested doctest:\n>>> ${func}${parenthesis ? "(" : ""}${testOutput.trim()}${parenthesis ? ")" : ""}`);
+      }
+    });
+
   });
 }

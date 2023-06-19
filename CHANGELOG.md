@@ -1,9 +1,25 @@
 # Change Log
 
-All notable changes to the "vsprutor" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
+## 0.1.0
 
 - Initial release
+
+## 0.1.1
+
+- Added extension icon
+
+## 0.1.2
+
+- Modified README
+
+## 0.1.3
+
+- Modified README
+
+## 0.1.4
+
+- Introduced Trimmer++
+    - Suggests a differentiating doctest if there are multiple valid suggestions and if the function arguments have type hinting
+- Fixes
+- Modified README
+- Modified Icon
