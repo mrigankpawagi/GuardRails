@@ -1,4 +1,13 @@
-## Set Up (Development Version)
+# VSPrutor Development Setup
+
+## Requirements
+1. Python
+2. GCC
+3. npm
+
+**Note:** VSPrutor is currently supported only on Windows.
+
+## Set Up
 
 ### Step 1
 Clone this repository.
