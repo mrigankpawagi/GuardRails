@@ -68,6 +68,11 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  // Create status bar item for displaying Assingment ID
+  var statusBarAssignmentID = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
+  statusBarAssignmentID.command = "vsprutor.helloWorld";
+  context.subscriptions.push(statusBarAssignmentID);
+
   /* CHECK FOR RESTRICTED KEYBINDINGS */
 
   const keybindingsPath = path.join(
@@ -131,7 +136,7 @@ export function activate(context: vscode.ExtensionContext) {
   let disposable = vscode.commands.registerCommand(
     "vsprutor.helloWorld",
     () => {
-      vscode.window.showInformationMessage("VSPrutor has been activated!");
+      // vscode.window.showInformationMessage("VSPrutor has been activated!");
     }
   );
 
@@ -169,6 +174,10 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.executeCommand(
       "editor.action.inlineSuggest.acceptNextWord"
     );
+  });
+  vscode.commands.registerCommand("vsprutor.setStatusBarAssignmentID", (id) => {
+    statusBarAssignmentID.text = `$(target) ${id}`;
+    statusBarAssignmentID.show();
   });
 
   vscode.commands.registerCommand("vsprutor.loadProblem", (problem) => {

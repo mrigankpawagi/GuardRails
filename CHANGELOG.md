@@ -23,3 +23,8 @@
 - Fixes
 - Modified README
 - Modified Icon
+
+## 0.1.5
+
+- Fixes
+- Assignment ID is now displayed in the status bar to allow the instructor to assist the student

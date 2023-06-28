@@ -161,6 +161,8 @@ export async function loadProblem(problem: Problem) {
         provider_problemStatement.putProblem(problem);
         provider_execute.start(problem);
 
+        vscode.commands.executeCommand("vsprutor.setStatusBarAssignmentID", problem.id);
+
         return true;
       }
     );

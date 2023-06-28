@@ -8,7 +8,7 @@
     "url": "https://github.com/mrigankpawagi/VSPrutor"
   },
   "icon": "icon.png",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -61,6 +61,10 @@
       {
         "command": "vsprutor.NextWordTracker",
         "title": "Hello World NextWordTracker"
+      },
+      {
+        "command": "vsprutor.setStatusBarAssignmentID",
+        "title": "Show Assignment ID in Status Bar"
       }
     ],
     "keybindings": [
