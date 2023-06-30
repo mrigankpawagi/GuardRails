@@ -562,7 +562,7 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
     suggestion = suggestion.split("```")[0]; // Some suggestions have a section followed by ``` which should be removed
 
     // check if copilot suggestion already contains the context
-    if(suggestion.indexOf(context) < 0){
+    if(suggestion.replace(/\s/g, "").indexOf(context.replace(/\s/g, "")) < 0){
       // Last line of context is repeated in the suggestion and should be removed
       //
       // Observation: If suggestion does not contain context, 
@@ -669,7 +669,7 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
   });
   runTerminal.stdin.end();
   runTerminal.on("close", async (code) => {
-    var head = output.slice(output.indexOf("@given"), 1 + output.indexOf("\n", output.indexOf("def")));
+    var head = output.slice(output.indexOf("@given"), 1 + output.indexOf(":", output.indexOf("def")));
     var head0 = head.slice(0, 4 + head.indexOf("def "));
     var head1 = head.slice(head.indexOf("(", head.indexOf("def")));
     var program = 
@@ -678,7 +678,7 @@ from hypothesis import given, strategies as st
 
 fault = None
 
-${head0} test${head1}
+${head0} test(${argumentBuildUp}):
     global fault
     fault = (${argumentBuildUp})
     assert ${goodSuggestionsIndex.map(e => `suggest${e}.${func}(${argumentBuildUp})`).join(" == ")}

@@ -1,20 +1,12 @@
 # Change Log
 
-## 0.1.0
+## 0.1.6
+- Fixes in Trimmer and Trimmer++
 
-- Initial release
+## 0.1.5
 
-## 0.1.1
-
-- Added extension icon
-
-## 0.1.2
-
-- Modified README
-
-## 0.1.3
-
-- Modified README
+- Fixes
+- Assignment ID is now displayed in the status bar to allow the instructor to assist the student
 
 ## 0.1.4
 
@@ -24,7 +16,18 @@
 - Modified README
 - Modified Icon
 
-## 0.1.5
+## 0.1.3
 
-- Fixes
-- Assignment ID is now displayed in the status bar to allow the instructor to assist the student
+- Modified README
+
+## 0.1.2
+
+- Modified README
+
+## 0.1.1
+
+- Added extension icon
+
+## 0.1.0
+
+- Initial release
