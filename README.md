@@ -15,11 +15,16 @@ VSPrutor is currently supported only on Windows.
 
 2. Logging pedagogically important data from students
 
-3. CoPilot suggestion trimmer (for Python)
-    - `Control + Shift + P` after opening suggestions panel (`Control + Enter`)
+3. Copilot suggestion trimmer (for Python)
+    - `Control + Shift + /` after opening suggestions panel (`Control + Enter`)
     - Suggests a differentiating doctest if there are multiple valid suggestions and if the function arguments have type hinting.
+
+4. Copilot suggestion mutator-trimmer (for Python)
+    - `Control + Shift + ;` after opening suggestions panel (`Control + Enter`)
+    - Suggests a differentiating doctest if there are multiple valid suggestions or mutants and if the function arguments have type hinting.
+
 
 ## Set Up
 
 ### Step 1
-Set `vsprutor.server`, `vsprutor.username` and `vsprutor.password` in _User Settings_. Note that this is not required for using the suggestion trimmer.
+Set `vsprutor.server`, `vsprutor.username` and `vsprutor.password` in _User Settings_. Note that this is not required for using the suggestion trimmer or mutator-trimmer.

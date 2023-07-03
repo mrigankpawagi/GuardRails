@@ -1,5 +1,12 @@
 # Change Log
 
+## 0.1.7
+- Introduced Mutator-Trimmer
+    - Expands the suggestion space by mutating the suggestions
+    - Suggests a differentiating doctest if there are multiple valid suggestions or mutants and if the function arguments have type hinting
+- Modified README
+- Fixes
+
 ## 0.1.6
 - Fixes in Trimmer and Trimmer++
 

@@ -8,7 +8,7 @@
     "url": "https://github.com/mrigankpawagi/VSPrutor"
   },
   "icon": "icon.png",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -86,6 +86,11 @@
       {
         "command": "vsprutor.testCaseChecker",
         "key": "ctrl+shift+oem_2",
+        "when": "github.copilot.activated"
+      },
+      {
+        "command": "vsprutor.testCaseCheckerMUT",
+        "key": "ctrl+shift+oem_1",
         "when": "github.copilot.activated"
       }
     ],
