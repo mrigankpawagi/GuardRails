@@ -10,5 +10,3 @@ vsc-extension-quickstart.md
 **/*.ts
 devREADME.md
 node_modules
-out/
-src/
