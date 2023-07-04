@@ -9,6 +9,11 @@
 __Note:__
 VSPrutor is currently supported only on Windows.
 
+### Installing Python Dependencies for trimming and mutations
+
+    python -m pip install hypothesis hypothesis[cli] hypothesis[ghostwriter] black
+    python -m pip install git+https://github.com/mrigankpawagi/mutpy.git#egg=mutpy
+
 ## Features
 
 1. Alternate Prutor frontend, from within VSCode.

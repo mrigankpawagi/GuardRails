@@ -121,7 +121,7 @@ export function activate(context: vscode.ExtensionContext) {
             );
           }
           else{
-            installDependencies();
+            // installDependencies();
           }
         } else {
           // console.error(`Could not determine ${output} version`);
@@ -521,28 +521,28 @@ function logTest(problem: Problem, testcase: Testcase, program: string) {
   });
 }
 
-function installDependencies(){
-  var runTerminal1 = spawn("python", ["-m", "pip", "install", 
-    "hypothesis", 
-    "hypothesis[cli]", 
-    "black", 
-    "hypothesis[ghostwriter]"
-  ]);
-  runTerminal1.stdin.end();
-  runTerminal1.on("close", async (code) => {
-    if(code !== 0){
-      vscode.window.showErrorMessage("Could not install dependencies for doctest suggestion.");
-    }
-  });
+// function installDependencies(){
+//   var runTerminal1 = spawn("python", ["-m", "pip", "install", 
+//     "hypothesis", 
+//     "hypothesis[cli]", 
+//     "black", 
+//     "hypothesis[ghostwriter]"
+//   ]);
+//   runTerminal1.stdin.end();
+//   runTerminal1.on("close", async (code) => {
+//     if(code !== 0){
+//       vscode.window.showErrorMessage("Could not install dependencies for doctest suggestion.");
+//     }
+//   });
   
-  var runTerminal2 = spawn("python", ["-m", "pip", "install", "git+https://github.com/mrigankpawagi/mutpy.git#egg=mutpy"]);
-  runTerminal2.stdin.end();
-  runTerminal2.on("close", async (code) => {
-    if(code !== 0){
-      vscode.window.showErrorMessage("Could not install dependencies for mutations.");
-    }
-  });
-}
+//   var runTerminal2 = spawn("python", ["-m", "pip", "install", "git+https://github.com/mrigankpawagi/mutpy.git#egg=mutpy"]);
+//   runTerminal2.stdin.end();
+//   runTerminal2.on("close", async (code) => {
+//     if(code !== 0){
+//       vscode.window.showErrorMessage("Could not install dependencies for mutations.");
+//     }
+//   });
+// }
 
 function confirmFunctionAndDocstring(textForCopilotPanel: string){
   // Check if a function definition exists before the cursor
