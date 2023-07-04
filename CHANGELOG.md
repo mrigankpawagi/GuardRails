@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.8
+- Fixes
+
 ## 0.1.7
 - Introduced Mutator-Trimmer
     - Expands the suggestion space by mutating the suggestions
