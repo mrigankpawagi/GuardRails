@@ -741,7 +741,7 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
     );
 
     // generate mutations of this file
-    child_process.exec(`mut.py --target ${storageFolder}/suggest${i}_m.py --unit-test ${storageFolder}/test_dummy.py -m`, (error, stdout, stderr) => {
+    child_process.exec(`mutpy --target ${storageFolder}/suggest${i}_m.py --unit-test ${storageFolder}/test_dummy.py -m`, (error, stdout, stderr) => {
       if (error) {
         console.log(`error: ${error.message}`);
         vscode.window.showInformationMessage(

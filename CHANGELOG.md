@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.10
+- Fixes
+
 ## 0.1.9
 - Removed automatic python dependency installation due to flaky behaviour
 - Modified README
