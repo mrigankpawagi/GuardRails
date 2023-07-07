@@ -1,14 +1,14 @@
 {
-  "name": "vsprutor",
-  "displayName": "VSPrutor",
-  "description": "VSCode Assistant for Prutor",
+  "name": "guardrails",
+  "displayName": "GuardRails",
+  "description": "Generating guarding rails for your code",
   "publisher": "MrigankPawagi",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mrigankpawagi/VSPrutor"
+    "url": "https://github.com/mrigankpawagi/GuardRails"
   },
   "icon": "icon.png",
-  "version": "0.1.11",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -21,63 +21,9 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Setup",
-      "properties": {
-        "vsprutor.server": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "description": "URL of the Prutor server"
-        },
-        "vsprutor.username": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "description": "Username of student account"
-        },
-        "vsprutor.password": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "default": null,
-          "description": "Password of student account"
-        }
-      }
+      "title": "Setup"
     },
-    "commands": [
-      {
-        "command": "vsprutor.helloWorld",
-        "title": "Hello World"
-      },
-      {
-        "command": "vsprutor.CommitTracker",
-        "title": "Hello World CommitTracker"
-      },
-      {
-        "command": "vsprutor.NextWordTracker",
-        "title": "Hello World NextWordTracker"
-      },
-      {
-        "command": "vsprutor.setStatusBarAssignmentID",
-        "title": "Show Assignment ID in Status Bar"
-      }
-    ],
     "keybindings": [
-      {
-        "command": "vsprutor.CommitTracker",
-        "key": "tab",
-        "when": "inlineSuggestionHasIndentationLessThanTabSize && inlineSuggestionVisible && !editorTabMovesFocus"
-      },
-      {
-        "command": "vsprutor.NextWordTracker",
-        "key": "ctrl+right",
-        "when": "inlineSuggestionVisible && !editorReadonly"
-      },
       {
         "command": "vsprutor.captureCopilotPanel",
         "key": "ctrl+Enter",
@@ -93,52 +39,7 @@
         "key": "ctrl+shift+oem_1",
         "when": "github.copilot.activated"
       }
-    ],
-    "menus": {
-      "view/item/context": [
-        {
-          "command": "vsprutor.helloWorld",
-          "group": "inline",
-          "when": "viewItem == problemlist"
-        }
-      ]
-    },
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "vsprutor-panel",
-          "title": "VSPrutor",
-          "icon": "icon.svg"
-        }
-      ]
-    },
-    "views": {
-      "vsprutor-panel": [
-        {
-          "id": "ongoingLab",
-          "name": "Ongoing Lab"
-        },
-        {
-          "id": "codebook",
-          "name": "Code Book"
-        },
-        {
-          "id": "problemStatementView",
-          "name": "Problem Statement",
-          "type": "webview"
-        },
-        {
-          "id": "testcasesView",
-          "name": "Test Cases",
-          "type": "webview"
-        },
-        {
-          "id": "executeView",
-          "name": "Execute",
-          "type": "webview"
-        }
-      ]
-    }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
