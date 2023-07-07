@@ -710,7 +710,7 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
     vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
   
     if(goodSuggestions.length > 1){
-      suggestDoctests(goodSuggestions, goodSuggestionsIndex, document);
+      suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn);
     }
   });      
 }
@@ -776,7 +776,7 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
           vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
         
           if(goodSuggestions.length > 1){
-            suggestDoctests(goodSuggestions, goodSuggestionsIndex, document);
+            suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn);
           }
         });
       }
@@ -784,7 +784,7 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
   });
 }
 
-function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number[], document: vscode.TextDocument){
+function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number[], viewColumn: vscode.ViewColumn | undefined){
   // check if type annotations are present for arguments
   const argumentArea = goodSuggestions[0].split("(")[1].split(")")[0];
   if((argumentArea.match(/:/g) || []).length < (argumentArea.match(/,/g) || []).length + 1){
@@ -812,23 +812,38 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
   runTerminal.on("close", async (code) => {
     var head = output.slice(output.indexOf("@given"), 1 + output.indexOf(":", output.indexOf("def")));
     var head0 = head.slice(0, 4 + head.indexOf("def "));
-    var head1 = head.slice(head.indexOf("(", head.indexOf("def")));
+
+    var testFunctions: string[] = [];
+    var testCalls: string[] = [];
+
+    ((arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat())(goodSuggestionsIndex).forEach(e => {
+      testFunctions.push(`${head0}test${e[0]}_${e[1]}(${argumentBuildUp}):
+  global fault
+  fault = (${argumentBuildUp})
+  assert suggest${e[0]}.${func}(${argumentBuildUp}) == suggest${e[1]}.${func}(${argumentBuildUp})
+`);
+      testCalls.push(`
+  try:
+    test${e[0]}_${e[1]}()
+  except Exception as e:
+    if fault not in faults_list:
+      faults_list.append(fault)
+`);
+    });
+
     var program = 
 `import ${goodSuggestionsIndex.map(e => `suggest${e}`).join(", ")}
 from hypothesis import given, strategies as st
 
+faults_list = []
 fault = None
 
-${head0} test(${argumentBuildUp}):
-    global fault
-    fault = (${argumentBuildUp})
-    assert ${goodSuggestionsIndex.map(e => `suggest${e}.${func}(${argumentBuildUp})`).join(" == ")}
+${testFunctions.join("\n\n")}
 
 if __name__ == "__main__":
-    try:
-        test()
-    except AssertionError:
-        print(fault)
+  ${testCalls.join("\n")}
+  for f in faults_list:
+    print(f">>> ${func}({repr(f)})")
 `;
     vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/test.py`), 
       new Uint8Array(Buffer.from(program))
@@ -846,8 +861,17 @@ if __name__ == "__main__":
     runTerminal.stdin.end();
     runTerminal.on("close", async (code) => {
       if(code === 0 && testOutput.trim() !== ""){
-        const parenthesis = testOutput.trim().indexOf("(") < 0;
-        vscode.window.showInformationMessage(`Suggested doctest:\n>>> ${func}${parenthesis ? "(" : ""}${testOutput.trim()}${parenthesis ? ")" : ""}`);
+        const document = await vscode.workspace.openTextDocument({
+          content: `Doctest suggestions:\n\n` 
+                    + testOutput,
+        });
+        vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
+      }
+      else if(code !== 0){
+        vscode.window.showInformationMessage('Error occured while suggesting doctests.');
+      }
+      else if(testOutput.trim() === ""){
+        vscode.window.showInformationMessage('No doctest suggestion found.');
       }
     });
 
