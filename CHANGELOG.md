@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.2
+- Improved doctest suggestions
+
 ## 0.1.1
 - Doctest suggestions for single copilot suggestion
 

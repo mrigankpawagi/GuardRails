@@ -176,7 +176,7 @@ function fixSuggestion(suggestion: string, context: string){
   return suggestion;
 }
 
-async function checkSuggestions(suggestionList: Array<string>, context: string, callBack: Function){
+async function checkSuggestions(suggestionList: Array<string>, context: string, allSuggestions: Array<string>, callBack: Function){
   var goodSuggestions: string[] = [];
   var goodSuggestionsIndex: number[] = [];
 
@@ -208,7 +208,7 @@ async function checkSuggestions(suggestionList: Array<string>, context: string, 
       if(counter === suggestionList.length){
         // All suggestions have been processed
 
-        callBack(goodSuggestions, goodSuggestionsIndex);
+        callBack(goodSuggestions, goodSuggestionsIndex, allSuggestions);
       }
     });  
   });
@@ -231,17 +231,15 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
     );
   });
 
-  checkSuggestions(suggestionsList, context, async (goodSuggestions: string[], goodSuggestionsIndex: number[]) => {
+  checkSuggestions(suggestionsList, context, suggestionsList, async (goodSuggestions: string[], goodSuggestionsIndex: number[], allSuggestions: Array<string>) => {
     const document = await vscode.workspace.openTextDocument({
       content: `Suggestions which satisfy the doctests (${goodSuggestions.length}/${suggestionsList.length}).\n\n` 
                 + goodSuggestions.join("\n\n----------\n\n"),
     });
     vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
   
-    if(goodSuggestions.length > 0){
-      suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn);
-    }
-  });      
+    suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn, allSuggestions);
+  });
 }
 
 async function trimSuggestionsMUT(suggestions: string, context: string, viewColumn: vscode.ViewColumn | undefined){
@@ -297,25 +295,29 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
           );
         });
 
-        checkSuggestions(allSuggestions, context, async (goodSuggestions: string[], goodSuggestionsIndex: number[]) => {
+        checkSuggestions(allSuggestions, context, allSuggestions, async (goodSuggestions: string[], goodSuggestionsIndex: number[], allSuggestions: Array<string>) => {
           const document = await vscode.workspace.openTextDocument({
             content: `Suggestions and mutations which satisfy the doctests.\n\n` 
                       + goodSuggestions.join("\n\n----------\n\n"),
           });
           vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
         
-          if(goodSuggestions.length > 0){
-            suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn);
-          }
+          suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn, allSuggestions);
         });
       }
     });
   });
 }
 
-function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number[], viewColumn: vscode.ViewColumn | undefined){
+function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number[], viewColumn: vscode.ViewColumn | undefined, allSuggestions: Array<string>){
   // check if type annotations are present for arguments
-  const argumentArea = goodSuggestions[0].split("(")[1].split(")")[0];
+  var argumentArea: string;
+  if (goodSuggestions.length === 0) {
+    argumentArea = allSuggestions[0].split("(")[1].split(")")[0];
+  }
+  else{
+    argumentArea = goodSuggestions[0].split("(")[1].split(")")[0];
+  }
   if((argumentArea.match(/:/g) || []).length < (argumentArea.match(/,/g) || []).length + 1){
     vscode.window.showErrorMessage("Cannot suggest doctests without type annotations on arguments.");
     return;
@@ -327,7 +329,12 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
   }).join(", ");
 
   // extract function name
-  var func = goodSuggestions[0].split("(")[0].replace("def", "").trim();
+  if(goodSuggestions.length === 0){
+    var func = allSuggestions[0].split("(")[0].split(" ")[1];
+  }
+  else{
+    var func = goodSuggestions[0].split("(")[0].split(" ")[1];
+  }
  
   // generate the test file
   var runTerminal: child_process.ChildProcessWithoutNullStreams;
@@ -336,11 +343,14 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
         ...goodSuggestionsIndex.map(e => `suggest${e}.${func}`)
       ], {cwd: storageFolder});
   }
-  else{ // goodSuggestions.length === 1
+  else if(goodSuggestions.length === 1){
     runTerminal = spawn("hypothesis", ["write", 
       ...goodSuggestionsIndex.map(e => `suggest${e}.${func}`), 
        "--idempotent"
     ], {cwd: storageFolder});
+  }
+  else{
+    runTerminal = spawn("hypothesis", ["write", "suggest0." + func, "--idempotent"], {cwd: storageFolder});
   }
   var output = "";
   runTerminal.stdout.on("data", (data) => {
@@ -355,24 +365,46 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
     var testFunctions: string[] = [];
     var testCalls: string[] = [];
 
-    if(goodSuggestions.length > 1){
-
-      ((arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat())(goodSuggestionsIndex).forEach(e => {
-        testFunctions.push(`${head0}test${e[0]}_${e[1]}(${argumentBuildUp}):
+ 
+    // Pair-wise equivalence testing
+    ((arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat())(goodSuggestionsIndex).forEach(e => {
+      testFunctions.push(`${head0}test${e[0]}_${e[1]}(${argumentBuildUp}):
   global fault
   fault = (${argumentBuildUp})
   assert suggest${e[0]}.${func}(${argumentBuildUp}) == suggest${e[1]}.${func}(${argumentBuildUp})
 `);
-        testCalls.push(`
+      testCalls.push(`
   try:
     test${e[0]}_${e[1]}()
+  except SyntaxError as e:
+    pass
   except Exception as e:
     if fault not in faults_list:
       faults_list.append(fault)
 `);
-      });
+    });
 
+    // Checking non-good suggestions for runtime errors
+    for(var k = 0; k < allSuggestions.length; k++){
+      if(!goodSuggestionsIndex.includes(k)){
+        testFunctions.push(`${head0}test${k}(${argumentBuildUp}):
+  global fault
+  fault = (${argumentBuildUp})
+  assert suggest${k}.${func}(${argumentBuildUp}) == suggest${k}.${func}(${argumentBuildUp})
+`);
+        testCalls.push(`
+  try:
+    test${k}()
+  except SyntaxError as e:
+      pass
+  except Exception as e:
+    if fault not in faults_list:
+      faults_list.append(fault)
+`);
+      }
     }
+
+    // If only one good suggestion, then test it against itself
     if(goodSuggestions.length === 1){
       testFunctions.push(`${head0}test(${argumentBuildUp}):
   global fault
@@ -382,12 +414,31 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
       testCalls.push(`
   try:
     test()
+  except SyntaxError as e:
+    pass
   except Exception as e:
-    faults_list.append(fault)
+    if fault not in faults_list:
+      faults_list.append(fault)
 `);
     }
+    
+    // Generate the test file
     var program = 
-`import ${goodSuggestionsIndex.map(e => `suggest${e}`).join(", ")}
+`${goodSuggestions.length > 0 ? 'import' : ''} ${goodSuggestionsIndex.map(e => `suggest${e}`).join(", ")}
+
+${Array.from({length: allSuggestions.length}, (_, i) => i).map(e => {
+  if (!goodSuggestionsIndex.includes(e)) {
+    return `
+try:
+  import suggest${e}
+except:
+    pass`;
+  }
+  else{
+    return ``;
+  }
+}).join("\n")}
+
 from hypothesis import given, strategies as st
 
 faults_list = []
