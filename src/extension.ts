@@ -238,7 +238,7 @@ async function trimSuggestions(suggestions: string, context: string, viewColumn:
     });
     vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
   
-    if(goodSuggestions.length > 1){
+    if(goodSuggestions.length > 0){
       suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn);
     }
   });      
@@ -304,7 +304,7 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
           });
           vscode.window.showTextDocument(document, viewColumn); // Show in same column as copilot suggestions
         
-          if(goodSuggestions.length > 1){
+          if(goodSuggestions.length > 0){
             suggestDoctests(goodSuggestions, goodSuggestionsIndex, viewColumn);
           }
         });
@@ -330,8 +330,18 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
   var func = goodSuggestions[0].split("(")[0].replace("def", "").trim();
  
   // generate the test file
-  var runTerminal = spawn("hypothesis", ["write", ...goodSuggestionsIndex.map(e => `suggest${e}.${func}`)],
-                          {cwd: storageFolder});
+  var runTerminal: child_process.ChildProcessWithoutNullStreams;
+  if(goodSuggestions.length > 1){
+    runTerminal = spawn("hypothesis", ["write", 
+        ...goodSuggestionsIndex.map(e => `suggest${e}.${func}`)
+      ], {cwd: storageFolder});
+  }
+  else{ // goodSuggestions.length === 1
+    runTerminal = spawn("hypothesis", ["write", 
+      ...goodSuggestionsIndex.map(e => `suggest${e}.${func}`), 
+       "--idempotent"
+    ], {cwd: storageFolder});
+  }
   var output = "";
   runTerminal.stdout.on("data", (data) => {
     // Replace all \r\n with \n
@@ -345,21 +355,37 @@ function suggestDoctests(goodSuggestions: string[], goodSuggestionsIndex: number
     var testFunctions: string[] = [];
     var testCalls: string[] = [];
 
-    ((arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat())(goodSuggestionsIndex).forEach(e => {
-      testFunctions.push(`${head0}test${e[0]}_${e[1]}(${argumentBuildUp}):
+    if(goodSuggestions.length > 1){
+
+      ((arr) => arr.map( (v, i) => arr.slice(i + 1).map(w => [v, w]) ).flat())(goodSuggestionsIndex).forEach(e => {
+        testFunctions.push(`${head0}test${e[0]}_${e[1]}(${argumentBuildUp}):
   global fault
   fault = (${argumentBuildUp})
   assert suggest${e[0]}.${func}(${argumentBuildUp}) == suggest${e[1]}.${func}(${argumentBuildUp})
 `);
-      testCalls.push(`
+        testCalls.push(`
   try:
     test${e[0]}_${e[1]}()
   except Exception as e:
     if fault not in faults_list:
       faults_list.append(fault)
 `);
-    });
+      });
 
+    }
+    if(goodSuggestions.length === 1){
+      testFunctions.push(`${head0}test(${argumentBuildUp}):
+  global fault
+  fault = (${argumentBuildUp})
+  assert suggest${goodSuggestionsIndex[0]}.${func}(${argumentBuildUp}) == suggest${goodSuggestionsIndex[0]}.${func}(${argumentBuildUp})
+`);
+      testCalls.push(`
+  try:
+    test()
+  except Exception as e:
+    faults_list.append(fault)
+`);
+    }
     var program = 
 `import ${goodSuggestionsIndex.map(e => `suggest${e}`).join(", ")}
 from hypothesis import given, strategies as st
@@ -372,7 +398,10 @@ ${testFunctions.join("\n\n")}
 if __name__ == "__main__":
   ${testCalls.join("\n")}
   for f in faults_list:
-    print(f">>> ${func}({repr(f)})")
+    args = repr(f)
+    if isinstance(f, tuple):
+      args = args[1:-1]
+    print(f">>> ${func}({args})")
 `;
     vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/test.py`), 
       new Uint8Array(Buffer.from(program))
