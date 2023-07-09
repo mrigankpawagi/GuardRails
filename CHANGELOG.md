@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.3
+- Edited README
+
 ## 0.1.2
 - Improved doctest suggestions
 
