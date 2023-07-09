@@ -1,11 +1,12 @@
 # GuardRails
+VSCode extension to help developers set up guardrails around their functions, by helping them disambiguate purpose statements. 
 
 ## Requirements
 
 1. Python
 
 __Note:__
-VSPrutor is currently supported only on Windows and with Python.
+GuardRails is currently supported only on Windows and with Python.
 
 ### Installing Python Dependencies for trimming and mutations
 
