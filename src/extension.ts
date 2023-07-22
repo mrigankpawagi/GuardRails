@@ -12,12 +12,29 @@ var storageFolder: string;
 // This method is called when your extension is activated
 export function activate(context: vscode.ExtensionContext) {
 
-  storageFolder = decodeURIComponent(context.globalStorageUri + "").split(
-    "vscode-userdata:/"
-  )[1];
+  const rawUri = decodeURIComponent(context.globalStorageUri + "");
+  if(rawUri.indexOf("vscode-userdata:/") >= 0){
+    // For Windows
+    storageFolder = rawUri.split("vscode-userdata:/")[1];
+  }
+  else if(rawUri.indexOf("file:///") >= 0){
+    // For Linux
+    storageFolder = rawUri.split("file:///")[1];
+    storageFolder = "/" + storageFolder;
+  }
+  else{
+    storageFolder = rawUri;
+  }
+  // TODO: Test on Mac
+
   if (!fs.existsSync(storageFolder)) {
     fs.mkdirSync(storageFolder);
   }
+
+  const extenstionPath = context.extensionPath;
+
+  // copy tester.py from extension to storage folder
+  fs.copyFileSync(path.join(extenstionPath, "media", "tester.py"), path.join(storageFolder, "tester.py"));
 
   var textForCopilotPanel: string = "";
   vscode.commands.registerCommand("vsprutor.captureCopilotPanel", () => {
@@ -251,6 +268,8 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
     return fixSuggestion(e.slice(2 + e.indexOf("\n")), context);
   });
 
+  const docstring = getDocstring(context);
+
   var mutatedSuggestions: Array<string> = [];
 
   // create a dummy test file
@@ -264,7 +283,7 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
 
     // create a python file for each suggestion (without running doctests)
     vscode.workspace.fs.writeFile(vscode.Uri.file(storageFolder + `/suggest${i}_m.py`), 
-      new Uint8Array(Buffer.from(suggestion))
+      new Uint8Array(Buffer.from(removeDocstring(suggestion)))
     );
 
     // generate mutations of this file
@@ -272,13 +291,13 @@ async function trimSuggestionsMUT(suggestions: string, context: string, viewColu
       if (error) {
         console.log(`error: ${error.message}`);
         vscode.window.showInformationMessage(
-          "Error creating mutations. Please try again later."
+          "Error creating some mutations. This may be due to malformed code in the suggestions."
         );
         return false;
       }
       stdout.split("-".repeat(80)).forEach((e, j) => {
         if(j % 2 !== 0){
-          mutatedSuggestions.push(e);
+          mutatedSuggestions.push(addDocstring(e, docstring));
         }
       });
       counter++;
@@ -485,4 +504,33 @@ if __name__ == "__main__":
     });
 
   });
+}
+
+function getDocstring(context: string){
+  // const docMatches = context.match( /('''|""")([\s\S]*?)\1/);
+  // if(!docMatches){
+  //   return "";
+  // }
+  // else{
+  //   return docMatches[2];
+  // }
+  return "";
+}
+
+function removeDocstring(suggestion: string){
+  // const docMatches = suggestion.match( /('''|""")([\s\S]*?)\1/);
+  // if(!docMatches){
+  //   return suggestion;
+  // }
+  // else{
+  //   return suggestion.replace(docMatches[0], "");
+  // }
+  return suggestion;
+}
+
+function addDocstring(suggestion: string, docstring: string){
+  // const part1 = suggestion.slice(0, suggestion.indexOf("\n", suggestion.indexOf("\n")));
+  // const part2 = suggestion.slice(suggestion.indexOf("\n", suggestion.indexOf("\n")) + 1);
+  // return part1 + `"""\n${docstring}"""` + part2;
+  return suggestion;
 }
