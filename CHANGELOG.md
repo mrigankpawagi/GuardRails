@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.4
+- Performance enhancements
+- More detailed suggestions
+
 ## 0.1.3
 - Edited README
 

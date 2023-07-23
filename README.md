@@ -6,7 +6,7 @@ VSCode extension to help developers set up guardrails around their functions, by
 1. Python
 
 __Note:__
-GuardRails is currently supported only on Windows and with Python.
+GuardRails is fully tested only on Windows and currently provides experimental support for Linux.
 
 ### Installing Python Dependencies for trimming and mutations
 
