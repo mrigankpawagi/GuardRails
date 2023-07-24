@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.5
+- Fixes
+
 ## 0.1.4
 - Performance enhancements
 - More detailed suggestions
