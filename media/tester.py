@@ -158,9 +158,12 @@ given_decorator = ghostwriter_output[ghostwriter_output.find('@given'):ghostwrit
 
 # Extract the arguments from blank_suggestion
 args = re.match(r'def\s+\w+\s*\((.*)\)', blank_suggestion).group(1)
-args = re.sub(r':\s*\w+', '', args)  # Remove type hints
-args = re.sub(r'=\s*\S+', '', args)  # Remove default values
-args = re.sub(r'\s+', '', args)  # Remove whitespace
+
+# split args by comma
+args_list = args.split(',')
+
+# ignore the part after '=' or ':' and strip whitespace. Then join back with comma
+args = ','.join([arg.split('=')[0].split(':')[0].strip() for arg in args_list])
 
 FAULTS = []
 
