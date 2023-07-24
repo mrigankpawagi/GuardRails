@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.6
+- Enhancements
+
 ## 0.1.5
 - Fixes
 

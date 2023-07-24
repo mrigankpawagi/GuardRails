@@ -5,6 +5,7 @@ from hypothesis.extra import ghostwriter
 import os
 import doctest
 import io
+import copy
 
 context = None
 
@@ -50,6 +51,11 @@ def print_doctest(fault, code = None, mut = False):
     args = repr(fault)
     if isinstance(fault, tuple):
         args = args[1:-1]
+
+        #remove trailing comma (if any)
+        if args[-1] == ',':
+            args = args[:-1]
+
     print(f"    >>> {function_name}({args})", end='\t')
     if code:
         print(f"[{code}]", end='')
@@ -182,8 +188,9 @@ f = None
 {given_decorator}
 def test({args}):
     global f
-    f = ({args})
-    assert {function_name}({args}) == {function_name}({args})""")
+    f = ({args},)
+    f_0 = copy.deepcopy(f)
+    assert {function_name}(*f) == {function_name}(*f_0)""")
 
     try:
         test()
@@ -196,7 +203,7 @@ def test({args}):
         suggestion['fault'] = f
 
 for suggestion in suggestion_pool:
-    if 'catch' in suggestion:
+    if 'catch' in suggestion and suggestion['catch'] in ('fuzz', 'selfeq'):
         if suggestion['fault'] not in fuzz_faults:
             fuzz_faults.append(suggestion['fault'])
             print_doctest(suggestion['fault'], suggestion['catch'], suggestion['mutant'])
@@ -204,12 +211,13 @@ for suggestion in suggestion_pool:
 FAULTS.extend(fuzz_faults)
 
 print(f"\nSurviving suggestions: {len(fuzz_survivors)}/{len(suggestion_pool)}")
+print(f"Fuzzed suggestions retained for doctesting.")
 
-# Perform doctests on surviving suggestions
+# Perform doctests on all suggestions (previously: only fuzz survivors)
 doctest_survivors = []
 print("\nStarting doctesting...")
 
-for suggestion in fuzz_survivors:
+for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivors:
     s = suggestion['suggestion']
 
     exec(s)
@@ -221,7 +229,7 @@ for suggestion in fuzz_survivors:
     else:
         suggestion['catch'] = 'doctest'
 
-print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(fuzz_survivors)}")
+print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}")  # previously: {len(doctest_survivors)}/{len(fuzz_survivors)}")
       
 
 # Perform pair-wise equivalence testing on surviving suggestions
@@ -242,8 +250,9 @@ f = None
 {given_decorator}
 def test({args}):
     global f
-    f = ({args})
-    assert {function_name}_1({args}) == {function_name}_2({args})""")
+    f = ({args},)
+    f_0 = copy.deepcopy(f)
+    assert {function_name}_1(*f) == {function_name}_2(*f_0)""")
         
         try:
             test()
