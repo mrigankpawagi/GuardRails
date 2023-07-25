@@ -213,6 +213,16 @@ FAULTS.extend(fuzz_faults)
 print(f"\nSurviving suggestions: {len(fuzz_survivors)}/{len(suggestion_pool)}")
 print(f"Fuzzed suggestions retained for doctesting.")
 
+# Check if context contains any doctests if terminate if there are no doctests
+
+# extract docstring
+docstring = re.search(r'"""(.*)"""', context, re.DOTALL).group(1)
+
+# check if docstring contains any doctests
+if '>>>' not in docstring:
+    print("Terminated as no doctests were found.")
+    exit(0)
+
 # Perform doctests on all suggestions (previously: only fuzz survivors)
 doctest_survivors = []
 print("\nStarting doctesting...")

@@ -111,14 +111,16 @@ function confirmFunctionAndDocstring(textForCopilotPanel: string){
     var docstring = docMatches[2];
   }
 
-  // Check if the docstring contains a test case
-  const doctestFind = docstring.indexOf(">>>");
-  if(doctestFind === -1){
-    vscode.window.showErrorMessage("No doctest found in docstring.");
-    return false;
-  }
+  // We allow fuzzing and self-equivalence without doctests as well.
 
-  return codeContext;
+  // // Check if the docstring contains a test case
+  // const doctestFind = docstring.indexOf(">>>");
+  // if(doctestFind === -1){
+  //   vscode.window.showErrorMessage("No doctest found in docstring.");
+  //   return false;
+  // }
+
+  // return codeContext;
 
 }
 
