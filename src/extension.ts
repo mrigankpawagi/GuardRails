@@ -120,7 +120,7 @@ function confirmFunctionAndDocstring(textForCopilotPanel: string){
   //   return false;
   // }
 
-  // return codeContext;
+  return codeContext;
 
 }
 

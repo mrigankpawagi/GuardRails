@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.8
+- Fixes
+
 ## 0.1.7
 - Enabled fuzzing and self-equivalence testing without doctests
 
