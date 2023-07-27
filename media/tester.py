@@ -1,11 +1,12 @@
 import re
 import ast
-from hypothesis import given, strategies as st
+from hypothesis import given, strategies as st, settings
 from hypothesis.extra import ghostwriter
 import os
 import doctest
 import io
 import copy
+from func_timeout import func_set_timeout, FunctionTimedOut
 
 context = None
 
@@ -183,8 +184,13 @@ for suggestion in suggestion_pool:
     
     s = suggestion['suggestion']
 
-    exec(f"""{s}\n
+    exec(f"""
+@func_set_timeout(3)
+{s}\n
+
 f = None
+
+@settings(print_blob=False, verbosity=0)
 {given_decorator}
 def test({args}):
     global f
@@ -198,12 +204,15 @@ def test({args}):
     except AssertionError:
         suggestion['catch'] = 'selfeq'
         suggestion['fault'] = f
+    except FunctionTimedOut:
+        suggestion['catch'] = 'timeout'
+        suggestion['fault'] = f
     except Exception as e:
         suggestion['catch'] = 'fuzz'
         suggestion['fault'] = f
 
 for suggestion in suggestion_pool:
-    if 'catch' in suggestion and suggestion['catch'] in ('fuzz', 'selfeq'):
+    if 'catch' in suggestion and suggestion['catch'] in ('timeout', 'fuzz', 'selfeq'):
         if suggestion['fault'] not in fuzz_faults:
             fuzz_faults.append(suggestion['fault'])
             print_doctest(suggestion['fault'], suggestion['catch'], suggestion['mutant'])
@@ -230,7 +239,7 @@ print("\nStarting doctesting...")
 for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivors:
     s = suggestion['suggestion']
 
-    exec(s)
+    exec("@func_set_timeout(3)\n" + s)
 
     output = run_doctest_silently(globals()[function_name]).strip()
 
@@ -255,8 +264,17 @@ for i in range(len(doctest_survivors)):
         s1 = re.sub(r'def\s+(\w+)\s*\(', r'def \1_1(', s1)
         s2 = re.sub(r'def\s+(\w+)\s*\(', r'def \1_2(', s2)
 
-        exec(f"""{s1}\n{s2}\n
+        exec(f"""
+
+@func_set_timeout(3)
+{s1}\n
+
+@func_set_timeout(3)
+{s2}\n
+
 f = None
+
+@settings(print_blob=False, verbosity=0)
 {given_decorator}
 def test({args}):
     global f
@@ -266,7 +284,7 @@ def test({args}):
         
         try:
             test()
-        except AssertionError:
+        except Exception as e:
             if f not in pairwise_faults:
                 pairwise_faults.append(f)
                 print_doctest(f, 'pairwise', doctest_survivors[i]['mutant'] or doctest_survivors[j]['mutant'])

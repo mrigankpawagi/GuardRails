@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.9
+- Fixes
+- Added check for timeout errors
+- Updated README
+
 ## 0.1.8
 - Fixes
 

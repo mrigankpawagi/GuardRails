@@ -10,8 +10,11 @@ GuardRails is fully tested only on Windows and currently provides experimental s
 
 ### Installing Python Dependencies for trimming and mutations
 
-    python -m pip install hypothesis hypothesis[cli] hypothesis[ghostwriter] black
-    python -m pip install git+https://github.com/mrigankpawagi/mutpy.git#egg=mutpy
+```bash
+$ python -m pip install hypothesis hypothesis[cli] hypothesis[ghostwriter] black
+$ python -m pip install git+https://github.com/mrigankpawagi/mutpy.git#egg=mutpy
+$ python -m pip install func-timeout
+```
 
 ## Features
 
