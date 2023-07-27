@@ -6,8 +6,10 @@ import os
 import doctest
 import io
 import copy
+import sys
 from func_timeout import func_set_timeout, FunctionTimedOut
 
+sys.tracebacklimit = 0
 context = None
 
 
@@ -81,6 +83,21 @@ def run_doctest_silently(func):
     # Return the output
     return output.getvalue()
 
+
+def remove_docstring(s: str):
+    # Check whether docstring has """ or '''
+
+    # get string after header, strip it and check first three characters
+    quotes = s.split(")", 1)[1].split(":", 1)[1].strip()[:3]
+
+    # remove docstring
+    if quotes == '"""':
+        s = re.sub(r'"""(.|\n)*"""', '', s)
+    elif quotes == "'''":
+        s = re.sub(r"'''(.|\n)*'''", '', s)
+
+    return s
+
 # Read context
 with open('context.txt', 'r') as f:
     context = f.read()
@@ -106,7 +123,7 @@ for suggestion in suggestions_list:
     try:
         ast.parse(suggestion)
         syntactic_suggestions.append(suggestion)
-    except:
+    except Exception as e:
         pass
 
 num_syntactic_suggestions = len(syntactic_suggestions)
@@ -144,10 +161,10 @@ if mutation_config == 1:
 
     print(f"Total mutations generated: {len(mutations)}")
 
-    # Replace single-triple quotes with double-triple quotes in docstrings
-    for mutant in mutations:
-        # replace first two occurances only
-        mutant = mutant.replace("'''", '"""', 2)
+    # # Replace single-triple quotes with double-triple quotes in docstrings
+    # for mutant in mutations:
+    #     # replace first two occurances only
+    #     mutant = mutant.replace("'''", '"""', 2)
     
     suggestion_pool.extend([{ 'suggestion': m, 'mutant': True } for m in mutations])
 
@@ -155,7 +172,7 @@ if mutation_config == 1:
 # Generate strategy for testing
 blank_suggestion = fix_suggestion('\n\npass')
 function_name = re.match(r'def\s+(\w+)\s*\(', blank_suggestion).group(1)
-exec(blank_suggestion)
+exec(remove_docstring(blank_suggestion))
 func = globals()[function_name]
 
 ghostwriter_output = ghostwriter.fuzz(func)
@@ -182,9 +199,10 @@ test = object()
 
 for suggestion in suggestion_pool:
     
-    s = suggestion['suggestion']
+    s = remove_docstring(suggestion['suggestion'])
 
-    exec(f"""
+    try:
+        exec(f"""
 @func_set_timeout(3)
 {s}\n
 
@@ -198,7 +216,6 @@ def test({args}):
     f_0 = copy.deepcopy(f)
     assert {function_name}(*f) == {function_name}(*f_0)""")
 
-    try:
         test()
         fuzz_survivors.append(suggestion)
     except AssertionError:
@@ -225,7 +242,16 @@ print(f"Fuzzed suggestions retained for doctesting.")
 # Check if context contains any doctests if terminate if there are no doctests
 
 # extract docstring
-docstring = re.search(r'"""(.*)"""', context, re.DOTALL).group(1)
+
+# Check whether docstring has """ or '''
+# get string after header, strip it and check first three characters
+quotes = context.split(")", 1)[1].split(":", 1)[1].strip()[:3]
+
+# remove docstring
+if quotes == '"""':
+    docstring = re.search(r'"""(.*)"""', context, re.DOTALL).group(1)
+elif quotes == "'''":
+    docstring = re.search(r"'''(.*)'''", context, re.DOTALL).group(1)
 
 # check if docstring contains any doctests
 if '>>>' not in docstring:
@@ -238,10 +264,12 @@ print("\nStarting doctesting...")
 
 for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivors:
     s = suggestion['suggestion']
-
-    exec("@func_set_timeout(3)\n" + s)
-
-    output = run_doctest_silently(globals()[function_name]).strip()
+    
+    try:
+        exec("@func_set_timeout(3)\n" + s)
+        output = run_doctest_silently(globals()[function_name]).strip()
+    except Exception as e:
+        suggestion['catch'] = 'doctest'
 
     if output == '':
         doctest_survivors.append(suggestion)
@@ -267,10 +295,10 @@ for i in range(len(doctest_survivors)):
         exec(f"""
 
 @func_set_timeout(3)
-{s1}\n
+{remove_docstring(s1)}\n
 
 @func_set_timeout(3)
-{s2}\n
+{remove_docstring(s2)}\n
 
 f = None
 
@@ -299,7 +327,7 @@ for f in FAULTS:
 
 print()
 print("=" * 80)
-print("All Valid Suggestions: ")
+print("All Valid Suggestions:\n\n")
 for s in doctest_survivors:
     print(s['suggestion'])
     print("-" * 80)
