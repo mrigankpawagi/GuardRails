@@ -151,7 +151,9 @@ if mutation_config == 1:
         # Mutate temp.py using mutpy
         # run `mutpy --target temp.py --unit-test test.py -m`
 
-        stdout = os.popen('mutpy --target temp.py --unit-test test.py -m').read()
+        pipe = os.popen('mutpy --target temp.py --unit-test test.py -m')
+        stdout = pipe.read()
+        pipe.close()
         
         mutations.extend(stdout.split("-" * 80)[1::2])
     

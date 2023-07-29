@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.11
+- Fixes
+
 ## 0.1.10
 - Fixes
 
