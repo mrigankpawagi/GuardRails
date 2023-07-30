@@ -101,15 +101,17 @@ function confirmFunctionAndDocstring(textForCopilotPanel: string){
     var codeContext = textForCopilotPanel.substring(defPos);
   }
 
+  // We allow pair-wise equivalence without a docstring as well.
+
   // Check if a docstring exists after the definition
-  const docMatches = codeContext.match( /('''|""")([\s\S]*?)\1/);
-  if(!docMatches){
-    vscode.window.showErrorMessage("No docstring found after function definition.");
-    return false;
-  }
-  else{
-    var docstring = docMatches[2];
-  }
+  // const docMatches = codeContext.match( /('''|""")([\s\S]*?)\1/);
+  // if(!docMatches){
+  //   vscode.window.showErrorMessage("No docstring found after function definition.");
+  //   return false;
+  // }
+  // else{
+  //   var docstring = docMatches[2];
+  // }
 
   // We allow fuzzing and self-equivalence without doctests as well.
 

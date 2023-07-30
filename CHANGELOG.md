@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.1.12
+- Enabled full testing without docstring
+
 ## 0.1.11
 - Fixes
 

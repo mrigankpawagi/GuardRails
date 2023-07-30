@@ -102,6 +102,12 @@ def remove_docstring(s: str):
 with open('context.txt', 'r') as f:
     context = f.read()
 
+# check if context has no docstring
+if context.strip() == remove_docstring(context).strip():
+
+    # add an empty docstring
+    context = context.strip() + '\n    """\n    """'
+
 # Read suggestions dump
 with open('suggestions.txt', 'r') as f:
     suggestions = f.read()
@@ -257,8 +263,8 @@ elif quotes == "'''":
 
 # check if docstring contains any doctests
 if '>>>' not in docstring:
-    print("Terminated as no doctests were found.")
-    exit(0)
+    print("No doctests were found.")
+    # exit(0)
 
 # Perform doctests on all suggestions (previously: only fuzz survivors)
 doctest_survivors = []
