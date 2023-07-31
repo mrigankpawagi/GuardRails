@@ -34,11 +34,15 @@ def fix_suggestion(suggestion: str) -> str:
 
         # Get indentation in context
         # Get the line with triple quotes
+        context_whitespace = None
         context_lines = context.split('\n')
         for line in context_lines:
             if '"""' in line or "'''" in line:
                 context_whitespace = re.match(r'\s*', line).group(0)
                 break
+        
+        if context_whitespace is None:
+            context_whitespace = "    "
         
         if whitespace != context_whitespace:
             # Replace indentation of the first line in suggestion
@@ -102,12 +106,6 @@ def remove_docstring(s: str):
 with open('context.txt', 'r') as f:
     context = f.read()
 
-# check if context has no docstring
-if context.strip() == remove_docstring(context).strip():
-
-    # add an empty docstring
-    context = context.strip() + '\n    """\n    """'
-
 # Read suggestions dump
 with open('suggestions.txt', 'r') as f:
     suggestions = f.read()
@@ -119,6 +117,36 @@ with open('mutate.txt', 'r') as f:
 suggestion_pool = []
 
 suggestions_list = [fix_suggestion(s) for s in suggestions.split('\n=======\n')[1:]]
+
+# check if context has no docstring
+if context.strip() == remove_docstring(context).strip():
+
+    # add an empty docstring
+    context = context.strip() + '\n    """\n    """'
+
+# Check if all suggestions have docstrings
+temp_suggestions_list = []
+for s in suggestions_list:
+
+    # remove function header
+    header = s[:s.find(":", s.find(")")) + 1]
+    body = s.split(")", 1)[1].split(":", 1)[1]
+
+    # get position of first non-whitespace character
+    pos = re.search(r'\S', body).start()
+
+    # get indent
+    indent = body[:pos] 
+
+    # check if body has no docstring
+    if body.strip()[:3] not in ('"""', "'''"):
+        
+        # add an empty docstring
+        body = indent + '"""\n' + indent + '"""\n' + body
+
+    temp_suggestions_list.append(header + "\n" + body)
+
+suggestions_list = temp_suggestions_list
 
 num_total_suggestions = len(suggestions_list)
 
@@ -276,12 +304,11 @@ for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivo
     try:
         exec("@func_set_timeout(3)\n" + s)
         output = run_doctest_silently(globals()[function_name]).strip()
+        if output == '':
+            doctest_survivors.append(suggestion)
+        else:
+            suggestion['catch'] = 'doctest'
     except Exception as e:
-        suggestion['catch'] = 'doctest'
-
-    if output == '':
-        doctest_survivors.append(suggestion)
-    else:
         suggestion['catch'] = 'doctest'
 
 print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}")  # previously: {len(doctest_survivors)}/{len(fuzz_survivors)}")
