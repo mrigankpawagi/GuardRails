@@ -216,8 +216,16 @@ ghostwriter_output = ghostwriter.fuzz(func)
 # Extract the @given decorator
 given_decorator = ghostwriter_output[ghostwriter_output.find('@given'):ghostwriter_output.find('def') - 1]
 
+GENERATE_ONLY_ASCII = True
+
+if GENERATE_ONLY_ASCII:
+    given_decorator = given_decorator.replace("st.text()", "st.text(alphabet=st.characters(min_codepoint=32, max_codepoint=126))")
+
 # Extract the arguments from blank_suggestion
 args = re.match(r'def\s+\w+\s*\((.*)\)', blank_suggestion).group(1)
+
+# Remove any parts of the pattern [...]
+args = re.sub(r'\[.*?\]', '', args)
 
 # split args by comma
 args_list = args.split(',')
@@ -239,7 +247,7 @@ for suggestion in suggestion_pool:
 
     try:
         exec(f"""
-@func_set_timeout(3)
+@func_set_timeout(0.3)
 {s}\n
 
 f = None
@@ -302,7 +310,7 @@ for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivo
     s = suggestion['suggestion']
     
     try:
-        exec("@func_set_timeout(3)\n" + s)
+        exec("@func_set_timeout(0.3)\n" + s)
         output = run_doctest_silently(globals()[function_name]).strip()
         if output == '':
             doctest_survivors.append(suggestion)
@@ -329,10 +337,10 @@ for i in range(len(doctest_survivors)):
 
         exec(f"""
 
-@func_set_timeout(3)
+@func_set_timeout(0.3)
 {remove_docstring(s1)}\n
 
-@func_set_timeout(3)
+@func_set_timeout(0.3)
 {remove_docstring(s2)}\n
 
 f = None
