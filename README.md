@@ -1,6 +1,9 @@
 # GuardRails
 VSCode extension to help developers set up guardrails around their functions, by helping them disambiguate purpose statements. 
 
+- The VSCode extension is available on the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MrigankPawagi.guardrails).
+- A dataset on the performance of GuardRails in comparison with Copilot Chat is available [here](https://docs.google.com/spreadsheets/d/e/2PACX-1vRwmXlP8V6gbXtB1oQ5IUXfbRjW3eoCYKcbm-zN4uXphd_AK4Wj0CZzVmeXW4XvF2_scszdCD89CFpV/pubhtml?gid=0&single=true).  
+
 ## Requirements
 
 1. Python
