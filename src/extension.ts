@@ -18,7 +18,12 @@ export async function activate(context: vscode.ExtensionContext) {
   const rawUri = decodeURIComponent(context.globalStorageUri + "");
   if(rawUri.indexOf("vscode-userdata:/") >= 0){
     // For Windows (and also observed on Ubuntu?!)
-    storageFolder = rawUri.split("vscode-userdata:")[1];
+    if(process.platform === "win32"){ // Windows
+      storageFolder = rawUri.split("vscode-userdata:/")[1];
+    }
+    else{ // Linux
+      storageFolder = rawUri.split("vscode-userdata:")[1];
+    } 
   }
   else if(rawUri.indexOf("file:///") >= 0){
     // For Linux

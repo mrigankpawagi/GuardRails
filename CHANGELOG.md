@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.2.1
+- Fixes
+
 ## 0.2.0
 - Webview-based interface for displaying results
 - Equivalence classes included in report

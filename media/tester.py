@@ -16,9 +16,12 @@ output_log['reports'] = []
 
 DEBUG = False
 
+__print = b = lambda x, a=print: a(x)
+print = lambda *args, **kwargs: None
+
 def _print(*args, **kwargs):
     if DEBUG:
-        print(*args, **kwargs)
+        __print(*args, **kwargs)
 
 
 def fix_suggestion(suggestion: str) -> str:
@@ -339,7 +342,7 @@ for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivo
         suggestion['catch'] = 'doctest'
 
 _print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}")  # previously: {len(doctest_survivors)}/{len(fuzz_survivors)}")
-output_log['doctest_survivors'] = doctest_survivors
+output_log['doctest_survivors'] = [{"suggestion": x["suggestion"], "mutant": x["mutant"]} for x in doctest_survivors]
 
 # Perform pair-wise equivalence testing on surviving suggestions
 pairwise_faults = []
@@ -445,4 +448,4 @@ output_log['equivalence_classes'] = {str(k): v for k, v in equivalence_classes.i
 output_log['difference_classes'] = {f"{k[0]}, {k[1]}": [print_doctest(x) for x in v] for k, v in difference_classes.items()}
 
 if not DEBUG:
-    print(json.dumps(output_log))
+    __print(json.dumps(output_log))
