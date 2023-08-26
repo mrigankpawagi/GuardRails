@@ -157,7 +157,7 @@ for suggestion in suggestions_list:
     try:
         ast.parse(suggestion)
         syntactic_suggestions.append(suggestion)
-    except Exception as e:
+    except:
         pass
 
 num_syntactic_suggestions = len(syntactic_suggestions)
@@ -268,7 +268,7 @@ def test({args}):
     except FunctionTimedOut:
         suggestion['catch'] = 'timeout'
         suggestion['fault'] = f
-    except Exception as e:
+    except:
         suggestion['catch'] = 'fuzz'
         suggestion['fault'] = f
 
@@ -316,7 +316,7 @@ for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivo
             doctest_survivors.append(suggestion)
         else:
             suggestion['catch'] = 'doctest'
-    except Exception as e:
+    except:
         suggestion['catch'] = 'doctest'
 
 print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}")  # previously: {len(doctest_survivors)}/{len(fuzz_survivors)}")
@@ -324,6 +324,8 @@ print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}
 
 # Perform pair-wise equivalence testing on surviving suggestions
 pairwise_faults = []
+equivalents = []
+differences = []
 print("\nStarting pair-wise equivalence testing...")
 
 for i in range(len(doctest_survivors)):
@@ -355,18 +357,55 @@ def test({args}):
         
         try:
             test()
-        except Exception as e:
+            equivalents.append((i, j))
+        except:
             if f not in pairwise_faults:
                 pairwise_faults.append(f)
+                differences.append((i, j, f))
                 print_doctest(f, 'pairwise', doctest_survivors[i]['mutant'] or doctest_survivors[j]['mutant'])
 
+
 FAULTS.extend([f for f in pairwise_faults if f not in FAULTS])
+
+# Create equivalence classes and difference classes
+equivalence_classes = {}
+counter = 0
+
+for i, j in equivalents:
+    if i not in equivalence_classes:
+        equivalence_classes[i] = counter
+        counter += 1
+    equivalence_classes[j] = equivalence_classes[i]
+
+# collect remaining classes
+for i in range(len(doctest_survivors)):
+    if i not in equivalence_classes:
+        equivalence_classes[i] = counter
+        counter += 1
+
+difference_classes = {}
+
+for i, j, f in differences:
+    cls1 = equivalence_classes[i]
+    cls2 = equivalence_classes[j]
+    if (cls1, cls2) not in difference_classes:
+        difference_classes[(cls1, cls2)] = []
+    difference_classes[(cls1, cls2)].append(f)
 
 print()
 print("=" * 80)
 print("All Doctest Suggestions: ")
 for f in FAULTS:
     print_doctest(f)
+
+# Print two simplest suggestions from each difference class
+print()
+print("=" * 80)
+print("Simplest differentiating doctest suggestions: ")
+for diff_class in difference_classes.values():
+    simplest_diff = sorted(diff_class, key=lambda x: len(str(x)))[:2]
+    for f in simplest_diff:
+        print_doctest(f)
 
 print()
 print("=" * 80)

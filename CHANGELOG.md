@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.15
+- Simplified doctests from pairwise equivalence testing.
+- Fixes (including Linux compatibility)
+
 ## 0.1.14
 - Fixes
 
