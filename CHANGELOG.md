@@ -1,5 +1,8 @@
 # Change Log
 
+## 2.4.1
+- Added demo GIF in README
+
 ## 0.2.3
 - Fixes
 

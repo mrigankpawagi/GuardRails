@@ -4,7 +4,7 @@ VSCode extension to help developers set up guardrails around their functions, by
 - The VSCode extension is available on the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=MrigankPawagi.guardrails).
 - A dataset on the performance of GuardRails in comparison with Copilot Chat is available [here](https://docs.google.com/spreadsheets/d/e/2PACX-1vRwmXlP8V6gbXtB1oQ5IUXfbRjW3eoCYKcbm-zN4uXphd_AK4Wj0CZzVmeXW4XvF2_scszdCD89CFpV/pubhtml?gid=0&single=true).
 
-https://github.com/mrigankpawagi/GuardRails/assets/25179158/3c846e8c-cd4e-4a50-976e-608c0038cfe2
+![Demo](https://raw.githubusercontent.com/mrigankpawagi/GuardRails/master/media/demo.gif)
 
 ## Requirements
 
