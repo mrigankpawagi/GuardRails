@@ -38,3 +38,10 @@ hr{
 #diff-doctests th{
     text-align: left;
 }
+
+#all-suggestions span {
+    background: #404040;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 10px;
+}

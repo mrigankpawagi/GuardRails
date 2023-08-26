@@ -213,7 +213,7 @@ if mutation_config == 1:
     os.remove('test.py')
 
     _print(f"Total mutations generated: {len(mutations)}")
-    output_log['mutant_count'] = num_total_suggestions
+    output_log['mutant_count'] = len(mutations)
 
     # # Replace single-triple quotes with double-triple quotes in docstrings
     # for mutant in mutations:
