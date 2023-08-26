@@ -6,11 +6,19 @@ import os
 import doctest
 import io
 import copy
+import json
 import sys
 from func_timeout import func_set_timeout, FunctionTimedOut
 
-sys.tracebacklimit = 0
 context = None
+output_log = dict()
+output_log['reports'] = []
+
+DEBUG = False
+
+def _print(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
 
 
 def fix_suggestion(suggestion: str) -> str:
@@ -55,6 +63,7 @@ def fix_suggestion(suggestion: str) -> str:
 
 
 def print_doctest(fault, code = None, mut = False):
+    
     args = repr(fault)
     if isinstance(fault, tuple):
         args = args[1:-1]
@@ -63,12 +72,14 @@ def print_doctest(fault, code = None, mut = False):
         if args[-1] == ',':
             args = args[:-1]
 
-    print(f"    >>> {function_name}({args})", end='\t')
+    _print(f"    >>> {function_name}({args})", end='\t')
     if code:
-        print(f"[{code}]", end='')
+        _print(f"[{code}]", end='')
     if mut:
-        print(f" [mut]", end='')
-    print()
+        _print(f" [mut]", end='')
+    _print()
+
+    return f"{function_name}({args})"
 
 
 def run_doctest_silently(func):
@@ -113,6 +124,7 @@ with open('suggestions.txt', 'r') as f:
 # Read mutation config
 with open('mutate.txt', 'r') as f:
     mutation_config = int(f.read())
+    output_log['mutation_config'] = mutation_config
 
 suggestion_pool = []
 
@@ -162,7 +174,9 @@ for suggestion in suggestions_list:
 
 num_syntactic_suggestions = len(syntactic_suggestions)
 
-print(f"Syntactically correct suggestions: {num_syntactic_suggestions}/{num_total_suggestions}")
+_print(f"Syntactically correct suggestions: {num_syntactic_suggestions}/{num_total_suggestions}")
+output_log['total_suggestions'] = num_total_suggestions
+output_log['syntactic_suggestions'] = num_syntactic_suggestions
 
 suggestion_pool.extend([{ 'suggestion': s, 'mutant': False } for s in syntactic_suggestions])
 
@@ -195,7 +209,8 @@ if mutation_config == 1:
     os.remove('temp.py')
     os.remove('test.py')
 
-    print(f"Total mutations generated: {len(mutations)}")
+    _print(f"Total mutations generated: {len(mutations)}")
+    output_log['mutant_count'] = num_total_suggestions
 
     # # Replace single-triple quotes with double-triple quotes in docstrings
     # for mutant in mutations:
@@ -237,14 +252,12 @@ FAULTS = []
 
 # Perform fuzzing and self-equivalence testing on all suggestions
 fuzz_faults = []
-print("\nStarting fuzzing and self-equivalence testing...")
+_print("\nStarting fuzzing and self-equivalence testing...")
 fuzz_survivors = []
 test = object()
 
-for suggestion in suggestion_pool:
-    
+for suggestion in suggestion_pool:    
     s = remove_docstring(suggestion['suggestion'])
-
     try:
         exec(f"""
 @func_set_timeout(0.3)
@@ -277,11 +290,17 @@ for suggestion in suggestion_pool:
         if suggestion['fault'] not in fuzz_faults:
             fuzz_faults.append(suggestion['fault'])
             print_doctest(suggestion['fault'], suggestion['catch'], suggestion['mutant'])
+            output_log['reports'].append({
+                'fault': print_doctest(suggestion['fault']),
+                'catch': suggestion['catch'],
+                'mutant': suggestion['mutant']
+            })
 
 FAULTS.extend(fuzz_faults)
 
-print(f"\nSurviving suggestions: {len(fuzz_survivors)}/{len(suggestion_pool)}")
-print(f"Fuzzed suggestions retained for doctesting.")
+_print(f"\nSurviving suggestions: {len(fuzz_survivors)}/{len(suggestion_pool)}")
+output_log['fuzz_survivors'] = len(fuzz_survivors)
+_print(f"Fuzzed suggestions retained for doctesting.")
 
 # Check if context contains any doctests if terminate if there are no doctests
 
@@ -299,12 +318,12 @@ elif quotes == "'''":
 
 # check if docstring contains any doctests
 if '>>>' not in docstring:
-    print("No doctests were found.")
+    _print("No doctests were found.")
     # exit(0)
 
 # Perform doctests on all suggestions (previously: only fuzz survivors)
 doctest_survivors = []
-print("\nStarting doctesting...")
+_print("\nStarting doctesting...")
 
 for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivors:
     s = suggestion['suggestion']
@@ -319,14 +338,14 @@ for suggestion in suggestion_pool:  # previously: for suggestion in fuzz_survivo
     except:
         suggestion['catch'] = 'doctest'
 
-print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}")  # previously: {len(doctest_survivors)}/{len(fuzz_survivors)}")
-      
+_print(f"\nSurviving suggestions: {len(doctest_survivors)}/{len(suggestion_pool)}")  # previously: {len(doctest_survivors)}/{len(fuzz_survivors)}")
+output_log['doctest_survivors'] = doctest_survivors
 
 # Perform pair-wise equivalence testing on surviving suggestions
 pairwise_faults = []
 equivalents = []
 differences = []
-print("\nStarting pair-wise equivalence testing...")
+_print("\nStarting pair-wise equivalence testing...")
 
 for i in range(len(doctest_survivors)):
     for j in range(i + 1, len(doctest_survivors)):
@@ -363,6 +382,11 @@ def test({args}):
                 pairwise_faults.append(f)
                 differences.append((i, j, f))
                 print_doctest(f, 'pairwise', doctest_survivors[i]['mutant'] or doctest_survivors[j]['mutant'])
+                output_log['reports'].append({
+                    'fault': print_doctest(f),
+                    'catch': 'pairwise',
+                    'mutant': doctest_survivors[i]['mutant'] or doctest_survivors[j]['mutant']
+                })
 
 
 FAULTS.extend([f for f in pairwise_faults if f not in FAULTS])
@@ -388,28 +412,37 @@ difference_classes = {}
 for i, j, f in differences:
     cls1 = equivalence_classes[i]
     cls2 = equivalence_classes[j]
+    if cls1 > cls2:
+        cls1, cls2 = cls2, cls1
     if (cls1, cls2) not in difference_classes:
         difference_classes[(cls1, cls2)] = []
     difference_classes[(cls1, cls2)].append(f)
 
-print()
-print("=" * 80)
-print("All Doctest Suggestions: ")
+_print()
+_print("=" * 80)
+_print("All Doctest Suggestions: ")
 for f in FAULTS:
     print_doctest(f)
 
 # Print two simplest suggestions from each difference class
-print()
-print("=" * 80)
-print("Simplest differentiating doctest suggestions: ")
+_print()
+_print("=" * 80)
+_print("Simplest differentiating doctest suggestions: ")
 for diff_class in difference_classes.values():
     simplest_diff = sorted(diff_class, key=lambda x: len(str(x)))[:2]
     for f in simplest_diff:
         print_doctest(f)
 
-print()
-print("=" * 80)
-print("All Valid Suggestions:\n\n")
+_print()
+_print("=" * 80)
+_print("All Valid Suggestions:\n\n")
 for s in doctest_survivors:
-    print(s['suggestion'])
-    print("-" * 80)
+    _print(s['suggestion'])
+    _print("-" * 80)
+
+output_log['FAULTS'] = [print_doctest(x) for x in FAULTS]
+output_log['equivalence_classes'] = {str(k): v for k, v in equivalence_classes.items()}
+output_log['difference_classes'] = {f"{k[0]}, {k[1]}": [print_doctest(x) for x in v] for k, v in difference_classes.items()}
+
+if not DEBUG:
+    print(json.dumps(output_log))

@@ -1,0 +1,40 @@
+table {
+    width: 100%;
+    font-size: 15px;
+}
+
+td{
+    padding: 5px 10px;    
+}
+
+hr{
+    border: 0.1px solid grey;
+}
+
+#main-data{
+    background: #404040;
+}
+
+#doctests td:nth-child(odd){
+    font-family: monospace;
+}
+
+#doctests td:nth-child(even){
+    text-align: right;
+}
+
+#doctests td:nth-child(even) span{
+    background: #404040;
+    padding: 5px 10px;
+    font-size: 12px;
+    border-radius: 10px;
+    margin: 0 1px;
+}
+
+#diff-doctests td:nth-child(odd){
+    font-family: monospace;
+}
+
+#diff-doctests th{
+    text-align: left;
+}

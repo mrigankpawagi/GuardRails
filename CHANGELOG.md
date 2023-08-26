@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.2.0
+- Webview-based interface for displaying results
+- Equivalence classes included in report
+- Fixes
+
 ## 0.1.15
 - Simplified doctests from pairwise equivalence testing.
 - Fixes (including Linux compatibility)

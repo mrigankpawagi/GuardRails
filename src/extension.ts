@@ -8,9 +8,12 @@ var fs = require("fs");
 var snapshot: any;
 var db: any;
 var storageFolder: string;
+var extensionUri: any;
 
 // This method is called when your extension is activated
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
+
+  extensionUri = context.extensionUri;
 
   const rawUri = decodeURIComponent(context.globalStorageUri + "");
   if(rawUri.indexOf("vscode-userdata:/") >= 0){
@@ -31,10 +34,10 @@ export function activate(context: vscode.ExtensionContext) {
     fs.mkdirSync(storageFolder);
   }
 
-  const extenstionPath = context.extensionPath;
+  const extensionPath = context.extensionPath;
 
   // copy tester.py from extension to storage folder
-  fs.copyFileSync(path.join(extenstionPath, "media", "tester.py"), path.join(storageFolder, "tester.py"));
+  fs.copyFileSync(path.join(extensionPath, "media", "tester.py"), path.join(storageFolder, "tester.py"));
 
   var textForCopilotPanel: string = "";
   vscode.commands.registerCommand("vsprutor.captureCopilotPanel", () => {
@@ -101,27 +104,6 @@ function confirmFunctionAndDocstring(textForCopilotPanel: string){
     var codeContext = textForCopilotPanel.substring(defPos);
   }
 
-  // We allow pair-wise equivalence without a docstring as well.
-
-  // Check if a docstring exists after the definition
-  // const docMatches = codeContext.match( /('''|""")([\s\S]*?)\1/);
-  // if(!docMatches){
-  //   vscode.window.showErrorMessage("No docstring found after function definition.");
-  //   return false;
-  // }
-  // else{
-  //   var docstring = docMatches[2];
-  // }
-
-  // We allow fuzzing and self-equivalence without doctests as well.
-
-  // // Check if the docstring contains a test case
-  // const doctestFind = docstring.indexOf(">>>");
-  // if(doctestFind === -1){
-  //   vscode.window.showErrorMessage("No doctest found in docstring.");
-  //   return false;
-  // }
-
   return codeContext;
 
 }
@@ -157,8 +139,19 @@ async function runTester(viewColumn: vscode.ViewColumn | undefined){
   runTerminal.stdin.end();
   runTerminal.on("close", async (code) => {
     // Display the results
-    const document = await vscode.workspace.openTextDocument({content: output});
-    vscode.window.showTextDocument(document, viewColumn);
+    const panel = vscode.window.createWebviewPanel(
+      'results',
+      'GuardRails',
+      viewColumn!,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+      }
+    );
+
+    // And set its HTML content and send data
+    setWebviewContent(panel.webview, output);
+
   });
 }
 
@@ -202,4 +195,49 @@ function trimSuggestionsMUT(suggestions: string, context: string, viewColumn: vs
 
   runTester(viewColumn);
 
+}
+
+function setWebviewContent(webview: vscode.Webview, output: string) {
+   // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
+   const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'view.js')).toString();
+
+  const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'view.css')).toString();
+
+  webview.html = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link href="${styleUri}" rel="stylesheet">
+    </head>
+    <body>
+      <main>
+        <h2>GuardRails</h2>
+        <table id="main-data"></table>
+        <hr>
+        <table id="results-data"></table>
+        <br>
+        <small>*Fuzzing involves self-equivalence testing as well.</small>
+        <br>
+        <small>**Fuzzed suggestions are retained for doctesting.</small>
+        <h3>Doctest Suggestions</h3>
+        <table id="doctests"></table>
+        <h3>Simplified differentiating doctest suggestions</h3>
+        <table id="diff-doctests">
+          <thead>
+            <tr>
+              <th>Doctest</th>
+              <th>Equivalence Classes</th>
+            </tr>
+          </thead>
+        </table>
+        <hr>
+        <h3>All valid suggestions</h3>
+        <div id="all-suggestions"></div>
+      </main>
+      <script src="${scriptUri}"></script>
+    </body>
+    </html>`;
+
+    webview.postMessage({ command: 'data', data: output });
 }

@@ -16,7 +16,7 @@ GuardRails is fully tested only on Windows and currently provides experimental s
 ```bash
 $ python -m pip install hypothesis hypothesis[cli] hypothesis[ghostwriter] black
 $ python -m pip install git+https://github.com/mrigankpawagi/mutpy.git#egg=mutpy
-$ python -m pip install git+https://github.com/mrigankpawagi/func_timeout.git#egg=func-timeout
+$ python -m pip install func-timeout
 ```
 
 ## Features
