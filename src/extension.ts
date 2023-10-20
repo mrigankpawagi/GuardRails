@@ -117,7 +117,7 @@ function awaitSuggestions(codeContext: string, callBack: Function){
   var temp = "";
     var c = setInterval(function () {
       vscode.window.visibleTextEditors.forEach((editor) => {      
-        if(editor.document.fileName === "GitHub Copilot"){
+        if(editor.document.fileName.indexOf("GitHub Copilot Suggestions for") >= 0){
           if(temp === editor.document.getText()){
             // Contents are stable
             vscode.window.showInformationMessage(

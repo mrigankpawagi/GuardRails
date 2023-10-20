@@ -1,6 +1,9 @@
 # Change Log
 
-## 2.4.1
+## 0.2.5
+- Fixed compatibility with update in GitHub Copilot.
+
+## 0.2.4
 - Added demo GIF in README
 
 ## 0.2.3
