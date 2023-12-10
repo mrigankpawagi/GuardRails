@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.2.6
+- Fixes in UI
+
 ## 0.2.5
 - Fixed compatibility with update in GitHub Copilot.
 
