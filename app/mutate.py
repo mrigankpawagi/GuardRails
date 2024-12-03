@@ -9,9 +9,6 @@ from types import NoneType
 
 from multipledispatch import dispatch
 
-from evalplus.gen.mut_gen import MutateGen
-from evalplus.gen.util import trusted_check_exec
-
 MAX_MULTI_STEP_SIZE = 5
 MUTATE_BOUND_SIZE = 8
 
@@ -132,11 +129,6 @@ class TypedMutGen():
     @dispatch(tuple)
     def typed_gen(self, _):
         return tuple(self.typed_gen([]))
-
-    # NOTE: disable set for now as Steven is too weak in Python (/s)
-    # @dispatch(set)
-    # def typed_gen(self, _):
-    #     return set(self.typed_gen([]))
 
     @dispatch(dict)
     def typed_gen(self, _):
@@ -309,11 +301,6 @@ class TypedMutGen():
     @dispatch(tuple)
     def typed_fetch(self, seed_input: Tuple):
         self._fetch_list_like(seed_input)
-
-    # NOTE: disable set for now as Steven is too weak in Python (/s)
-    # @dispatch(set)
-    # def typed_fetch(self, seed_input: Set):
-    #     self._fetch_list_like(seed_input)
 
     # Dict
     @dispatch(dict)

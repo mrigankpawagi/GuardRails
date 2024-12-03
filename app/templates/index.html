@@ -20,11 +20,7 @@
     <h1>GuardRails</h1>
     <form id="codeForm">
         <label for="declaration">Function declaration (header and docstring).</label><br>
-        <textarea id="declaration" name="declaration" rows="10" cols="30" placeholder="Enter function header and docstring (with optional doctests)."></textarea><br><br>
-        
-        <label for="definition">Complete function definition.</label><br>
-        <textarea id="definition" name="definition" rows="10" cols="30" placeholder="Enter complete function definition."></textarea><br><br>
-        
+        <textarea id="declaration" name="declaration" rows="10" cols="30" placeholder="Enter function header and docstring (with optional doctests)."></textarea><br><br>        
         <input type="submit" value="Submit">
     </form>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
@@ -35,18 +31,12 @@
             lineNumbers: true,
             theme: 'default'
         });
-        var definitionEditor = CodeMirror.fromTextArea(document.getElementById('definition'), {
-            mode: 'python',
-            lineNumbers: true,
-            theme: 'default'
-        });
 
         document.getElementById('codeForm').addEventListener('submit', function(event) {
             event.preventDefault();
             var declaration = declarationEditor.getValue();
-            var definition = definitionEditor.getValue();
 
-            fetch(`/submit?declaration=${encodeURIComponent(declaration)}&definition=${encodeURIComponent(definition)}`)
+            fetch(`/submit?declaration=${encodeURIComponent(declaration)}`)
                 .then(response => response.text())
                 .then(data => {
                     console.log('Form submitted successfully!');
