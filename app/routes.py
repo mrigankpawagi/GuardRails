@@ -1,6 +1,5 @@
 from flask import render_template, request
 from app import app
-from generate import CodeGemini
 
 @app.route('/')
 def index():
@@ -8,4 +7,6 @@ def index():
 
 @app.route('/submit', methods=['GET'])
 def submit():
+    definition = request.args.get('definition')
+    declaration = request.args.get('declaration')
     pass
