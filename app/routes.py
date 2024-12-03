@@ -1,6 +1,6 @@
 from flask import render_template, request
 from app import app
-from generate import CodeGemini, TestGemini
+from app.generate import CodeGemini, TestGemini
 
 GENERATION_BUDGET = 10
 
