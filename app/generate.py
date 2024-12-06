@@ -3,6 +3,7 @@ import json
 from abc import abstractmethod
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
+from google.api_core.exceptions import GoogleAPICallError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -42,19 +43,22 @@ class CodeGemini(CodeModel):
         "response_mime_type": "application/json",
     }
     model = genai.GenerativeModel(
-        model_name = "gemini-1.5-pro",
+        model_name = "gemini-1.5-flash-8b",
         generation_config = generation_config,
         system_instruction = "You are a professional Python programmer. Given an incomplete Python function definition, you produce the function body. If the specification is ambiguous, you can make reasonable assumptions. Your output is always a syntactically correct and complete function including the function header. Wrap the code in ```python and ```.",
     )
 
     @staticmethod
     def generate(prompt: str) -> str:
-        chat_session = CodeGemini.model.start_chat(history=[])
-        response = chat_session.send_message(prompt)
-        completion = json.loads(response.text)["completion"]
-        completion = completion.split("```python", 1)[1].split("```")[0]
-        
-        return completion
+        try:
+            chat_session = CodeGemini.model.start_chat(history=[])
+            response = chat_session.send_message(prompt)
+            completion = json.loads(response.text)["completion"]
+            completion = completion.split("```python", 1)[1].split("```")[0]
+            
+            return completion
+        except GoogleAPICallError:
+            return None
 
 
 class TestGemini(TestModel):
@@ -79,16 +83,24 @@ class TestGemini(TestModel):
         "response_mime_type": "application/json",
     }
     model = genai.GenerativeModel(
-        model_name = "gemini-1.5-pro",
+        model_name = "gemini-1.5-flash-8b",
         generation_config = generation_config,
         system_instruction = "You are a professional Python programmer. Given an incomplete Python function definition, you produce complex, difficult, and corner-case inputs to test the function. You provide the string representation of inputs as Python objects and pack arguments inside tuples.",
     )
 
     @staticmethod
     def generate(prompt: str) -> list:
-        chat_session = TestGemini.model.start_chat(history=[])
-        response = chat_session.send_message(prompt)
-        inputs = json.loads(response.text)["inputs"]
-        inputs_as_objects = [eval(input) for input in inputs]
-        
-        return inputs_as_objects
+        try:
+            chat_session = TestGemini.model.start_chat(history=[])
+            response = chat_session.send_message(prompt)
+            inputs = json.loads(response.text)["inputs"]
+            inputs_as_objects = []
+            for inp in inputs:
+                try:
+                    inputs_as_objects.append(eval(inp))
+                except Exception:
+                    inputs_as_objects.append(inp)
+            
+            return inputs_as_objects
+        except GoogleAPICallError:
+            return None
