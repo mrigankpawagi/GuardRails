@@ -12,9 +12,6 @@ from multipledispatch import dispatch
 MAX_MULTI_STEP_SIZE = 5
 MUTATE_BOUND_SIZE = 8
 
-NoneType = type(None)
-
-
 # decorator to use ingredients
 class use_ingredient:
     def __init__(self, prob: float):
@@ -32,9 +29,8 @@ class use_ingredient:
 
 
 class TypedMutGen():
-    def __init__(self, inputs: List, signature: str, contract_code: str):
-        super().__init__(inputs, signature, contract_code)
-        self.timeout = 60 * 60  # 1 hour
+    def __init__(self, inputs: List):
+        self.timeout = 5
         self.ingredients = {
             int: set(),
             float: set(),
@@ -43,6 +39,10 @@ class TypedMutGen():
         }
         for x in inputs:
             self.fetch_ingredient(x)
+
+        self.seed_pool = inputs
+        self.seed_hash = set(hash(str(x)) for x in inputs)
+        self.new_inputs = []
 
     def seed_selection(self):
         # random for now.
@@ -322,9 +322,8 @@ class TypedMutGen():
                 new_input = self.mutate(new_input)
             num_generated += 1
             if hash(str(new_input)) not in self.seed_hash:
-                if trusted_check_exec(self.contract, [new_input], self.entry_point):
-                    self.typed_fetch(new_input)
-                    self.seed_pool.append(new_input)
-                    self.new_inputs.append(new_input)
+                self.typed_fetch(new_input)
+                self.seed_pool.append(new_input)
+                self.new_inputs.append(new_input)
                 self.seed_hash.add(hash(str(new_input)))
         return self.new_inputs[:num]
