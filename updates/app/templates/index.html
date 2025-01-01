@@ -54,6 +54,7 @@
         }
         .docstring-wrapper {
             font-family: monospace;
+            background-color: #fff;
         }
         .quotes {
             color: #a50;
@@ -86,6 +87,22 @@
         .prefix.punctuation {
             color: #000;  /* Punctuation color */
         }
+        .doctest-controls {
+            margin: 10px 0;
+            background-color: #fff;
+            padding: 10px;
+        }
+        .doctest-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .doctest-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +129,9 @@
             <div class="docstring-wrapper">
                 <div class="quotes">    """</div>
                 <div id="docstringEditor"></div>
+                <div class="doctest-controls">
+                    <button type="button" class="doctest-button" id="addDoctest">Create Doctest</button>
+                </div>
                 <div class="quotes">    """</div>
             </div>
         </div>
@@ -124,7 +144,7 @@
         var docstringEditor = CodeMirror(document.getElementById('docstringEditor'), {
             lineNumbers: false,
             theme: 'default',
-            value: '    Your docstring here',
+            value: '    Description of your function\n\n    Examples:\n    >>> function_name(...)\n    expected_output\n',
             indentUnit: 4,
             gutters: ["CodeMirror-linenumbers"]
         });
@@ -181,22 +201,70 @@
                 });
         });
 
-        // Add auto-resize functionality
-        function setupAutoResize(input) {
-            function updateWidth() {
-                let contents = input.value || input.placeholder;
-                input.style.width = (contents.length) + 'ch';
-            }
-
-            input.addEventListener('input', updateWidth);
-            input.addEventListener('change', updateWidth);
-            updateWidth(); // Initial width
+        function updateWidth(input) {
+            let contents = input.value || input.placeholder;
+            input.style.width = (contents.length) + 'ch';
         }
 
-        // Setup auto-resize for both inputs
-        setupAutoResize(document.getElementById('functionName'));
-        setupAutoResize(document.getElementById('arguments'));
-        setupAutoResize(document.getElementById('returnType'));
+        updateWidth(document.getElementById('functionName'));
+        updateWidth(document.getElementById('arguments'));
+        updateWidth(document.getElementById('returnType'));
+
+        function createDoctest(functionName) {
+            return `\n    >>> ${functionName}(...)\n    expected_output\n`;
+        }
+
+        document.getElementById('addDoctest').addEventListener('click', function() {
+            const functionName = document.getElementById('functionName').value || 'function_name';
+            const doctest = createDoctest(functionName);
+            const doc = docstringEditor.getValue();
+            const currentPos = docstringEditor.getCursor();
+            
+            // Insert doctest at cursor position or at the end
+            if (currentPos) {
+                docstringEditor.replaceRange('\n' + doctest, currentPos);
+            } else {
+                docstringEditor.setValue(doc + doctest);
+            }
+        });
+
+        // Update doctest examples when function name changes
+        function updateDoctestFunctionNames(input) {
+            const oldName = input.dataset.lastValue || 'function_name';
+            const newName = input.value || 'function_name';
+            input.dataset.lastValue = newName;
+
+            // Update existing doctests with new function name
+            const content = docstringEditor.getValue();
+            const updatedContent = content.replace(
+                new RegExp(`>>> ${oldName}\\(`, 'g'), 
+                `>>> ${newName}(`
+            );
+
+            docstringEditor.setValue(updatedContent);
+        }
+
+        document.getElementById('functionName').addEventListener('input', function(e) {
+            updateDoctestFunctionNames(this);
+            updateWidth(this);
+        });
+
+        document.getElementById('functionName').addEventListener('change', function() {
+            updateDoctestFunctionNames(this);
+            updateWidth(this);
+        });
+        document.getElementById('arguments').addEventListener('input', function() {
+            updateWidth(this);
+        });
+        document.getElementById('arguments').addEventListener('change', function() {
+            updateWidth(this);
+        });
+        document.getElementById('returnType').addEventListener('input', function() {
+            updateWidth(this);
+        });
+        document.getElementById('returnType').addEventListener('change', function() {
+            updateWidth(this);
+        });
     </script>
 </body>
 </html>
