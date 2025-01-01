@@ -9,34 +9,168 @@
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .function-input {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .prefix {
+            background-color: #fff;
+            padding: 5px;
+        }
+        input[type="text"] {
+            font-family: monospace;
+            padding: 5px;
+            outline: none;
+            border: 0;
+        }
+        #functionName {
+            text-align: right;
+            color: #795E26;  /* Python function name color */
+        }
+        #arguments {
+            color: #001080;  /* Python parameter color */
+        }
+        #returnType {
+            color: #001080;  /* Same color as arguments */
         }
         .CodeMirror {
-            border: 1px solid #ccc;
             height: auto;
+            margin-top: 0;
+        }
+        .input-group {
+            margin-bottom: 10px;
+            background-color: #fff;
+            font-size: 14px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .docstring-wrapper {
+            font-family: monospace;
+        }
+        .quotes {
+            color: #a50;
+            user-select: none;
+            padding: 4px 0;
+            white-space: pre;
+            background-color: #fff;
+        }
+        #docstringEditor .cm-s-default {
+            color: #a50; /* Python docstring color */
+        }
+        .no-bottom-margin {
+            margin-bottom: 0!important;
+        }
+        .function-input input[type="text"] {
+            width: auto;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+        .imports-wrapper {
+            font-family: monospace;
+            margin-bottom: 0;
+        }
+        .readonly-line {
+            cursor: not-allowed;
+        }
+        .prefix.keyword {
+            color: #0000FF;  /* Python keyword color */
+        }
+        .prefix.punctuation {
+            color: #000;  /* Punctuation color */
         }
     </style>
 </head>
 <body>
     <h1>GuardRails</h1>
     <form id="codeForm">
-        <label for="declaration">Function declaration (header and docstring).</label><br>
-        <textarea id="declaration" name="declaration" rows="10" cols="30" placeholder="Enter function header and docstring (with optional doctests)."></textarea><br><br>        
+        <div class="input-group no-bottom-margin">
+            <div class="imports-wrapper">
+                <div id="importsEditor"></div>
+            </div>
+        </div>
+        <div class="input-group no-bottom-margin">
+            <div class="function-input no-bottom-margin">
+                <span class="prefix keyword">def</span>
+                <input autocomplete="off" type="text" id="functionName" placeholder="function_name">
+                <span class="prefix punctuation">(</span>
+                <input autocomplete="off" type="text" id="arguments" placeholder="arg1: type1, arg2: type2, ...">
+                <span class="prefix punctuation">)</span>
+                <input autocomplete="off" type="text" id="returnType" placeholder="-> return_type">
+                <span class="prefix punctuation">:</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <div class="docstring-wrapper">
+                <div class="quotes">    """</div>
+                <div id="docstringEditor"></div>
+                <div class="quotes">    """</div>
+            </div>
+        </div>
+
         <input type="submit" value="Submit">
     </form>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
     <script>
-        var declarationEditor = CodeMirror.fromTextArea(document.getElementById('declaration'), {
-            mode: 'python',
-            lineNumbers: true,
-            theme: 'default'
+        var docstringEditor = CodeMirror(document.getElementById('docstringEditor'), {
+            lineNumbers: false,
+            theme: 'default',
+            value: '    Your docstring here',
+            indentUnit: 4,
+            gutters: ["CodeMirror-linenumbers"]
         });
+        // Create imports editor
+        var importsEditor = CodeMirror(document.getElementById('importsEditor'), {
+            mode: 'python',
+            lineNumbers: false,
+            theme: 'default',
+            value: 'import typing\n\n# Add any imports from built-in modules\n# or add helper functions here\n',
+            indentUnit: 4,
+            extraKeys: {
+                'Enter': function(cm) {
+                    var pos = cm.getCursor();
+                    if (pos.line === 0) {
+                        // Prevent editing first line
+                        return;
+                    }
+                    cm.replaceSelection('\n');
+                }
+            }
+        });
+
+        // Make first line read-only
+        importsEditor.markText(
+            {line: 0, ch: 0},
+            {line: 1, ch: 0},
+            {
+                readOnly: true, 
+                className: 'readonly-line',
+                atomic: true,
+                inclusiveLeft: true,
+            }
+        );
 
         document.getElementById('codeForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            var declaration = declarationEditor.getValue();
+            
+            var imports = importsEditor.getValue();
+            var functionName = document.getElementById('functionName').value;
+            var arguments = document.getElementById('arguments').value;
+            var returnType = document.getElementById('returnType').value;
+            var docstring = docstringEditor.getValue();
 
-            fetch(`/submit?declaration=${encodeURIComponent(declaration)}`)
+            var fullDeclaration = `${imports}\n\ndef ${functionName}(${arguments})${returnType}:\n    """\n${docstring}\n    """`;
+
+            fetch(`/submit?declaration=${encodeURIComponent(fullDeclaration)}`)
                 .then(response => response.text())
                 .then(data => {
                     console.log('Form submitted successfully!');
@@ -46,6 +180,23 @@
                     console.error('Error:', error);
                 });
         });
+
+        // Add auto-resize functionality
+        function setupAutoResize(input) {
+            function updateWidth() {
+                let contents = input.value || input.placeholder;
+                input.style.width = (contents.length) + 'ch';
+            }
+
+            input.addEventListener('input', updateWidth);
+            input.addEventListener('change', updateWidth);
+            updateWidth(); // Initial width
+        }
+
+        // Setup auto-resize for both inputs
+        setupAutoResize(document.getElementById('functionName'));
+        setupAutoResize(document.getElementById('arguments'));
+        setupAutoResize(document.getElementById('returnType'));
     </script>
 </body>
 </html>
