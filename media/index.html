@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
-    <link rel="stylesheet" href="#{baseUri}/css/style.css">
+    <base href="#{baseUri}/">
+    <link rel="stylesheet" href="css/lib/codemirror.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <h1>GuardRails</h1>
-    <form id="codeForm">
+    <h3>Provide Your Function Description</h3>
+    <div id="codeContainer">
         <div class="input-group no-bottom-margin">
             <div class="imports-wrapper">
                 <div id="importsEditor"></div>
@@ -37,11 +38,11 @@
             </div>
         </div>
 
-        <input type="submit" value="Submit">
-    </form>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
-    <script src="#{baseUri}/js/interface.js"></script>
-    <script src="#{baseUri}/js/main.js"></script>
+        <button type="button" id="submitButton">Submit</button>
+    </div>
+    <script src="js/lib/codemirror.min.js"></script>
+    <script src="js/lib/python.min.js"></script>
+    <script src="js/interface.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
