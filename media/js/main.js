@@ -1,21 +1,28 @@
-// document.getElementById('codeForm').addEventListener('submit', function(event) {
-//     event.preventDefault();
-    
-//     var imports = importsEditor.getValue();
-//     var functionName = document.getElementById('functionName').value || "function_name";
-//     var arguments = document.getElementById('arguments').value;
-//     var returnType = document.getElementById('returnType').value;
-//     var docstring = docstringEditor.getValue();
+(function() {
+    const vscode = acquireVsCodeApi();
 
-//     var fullDeclaration = `${imports}\n\ndef ${functionName}(${arguments})${returnType}:\n    """\n${docstring}\n    """`;
+    document.getElementById('submitButton').addEventListener('click', function() {
+        var imports = importsEditor.getValue();
+        var functionName = document.getElementById('functionName').value || "function_name";
+        var arguments = document.getElementById('arguments').value;
+        var returnType = document.getElementById('returnType').value;
+        var docstring = docstringEditor.getValue();
 
-//     fetch(`/submit?declaration=${encodeURIComponent(fullDeclaration)}`)
-//         .then(response => response.text())
-//         .then(data => {
-//             console.log('Form submitted successfully!');
-//             console.log(data);
-//         })
-//         .catch(error => {
-//             console.error('Error:', error);
-//         });
-// });
+        var fullDeclaration = `${imports}\n\ndef ${functionName}(${arguments})${returnType}:\n    """\n${docstring}\n    """`;
+
+        vscode.postMessage({
+            command: 'submitFunction',
+            data: fullDeclaration
+        });
+    });
+
+    window.addEventListener('message', event => {
+        const message = event.data;
+        switch (message.command) {
+            case 'pythonResult':
+                console.log('Received Python result:', message.data);
+                break;
+        }
+    });
+
+})();

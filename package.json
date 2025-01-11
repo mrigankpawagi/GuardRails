@@ -20,6 +20,17 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "GuardRails",
+      "properties": {
+        "guardrails.whichpython": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python interpreter",
+          "title": "GuardRails: Which Python"
+        }
+      }
+    },
     "commands": [
       {
         "command": "guardrails.openPanel",
