@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import * as fs from 'fs';
 
 let extensionUri: vscode.Uri;
 
@@ -40,22 +41,13 @@ export function activate(context: vscode.ExtensionContext) {
 export function deactivate() {}
 
 function setWebviewContent(webview: vscode.Webview, extensionUri: vscode.Uri) {
-  const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'view.js'));
-  const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media', 'view.css'));
-
-  webview.html = `<!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <link href="${styleUri}" rel="stylesheet">
-    </head>
-    <body>
-      <main>
-        <h2>GuardRails</h2>
-        <!-- Add your webview content here -->
-      </main>
-      <script src="${scriptUri}"></script>
-    </body>
-    </html>`;
+  const mediaUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'media'));
+  
+  const htmlPath = vscode.Uri.joinPath(extensionUri, 'media', 'index.html');
+  let html = fs.readFileSync(htmlPath.fsPath, 'utf-8');
+  
+  // Replace placeholders with actual URIs
+  html = html.replace('#{baseUri}', mediaUri.toString());
+  
+  webview.html = html;
 }
