@@ -8,7 +8,7 @@ VSCode extension to help developers write complete and unambiguous docstrings fo
 ![Demo](https://raw.githubusercontent.com/mrigankpawagi/GuardRails/master/media/graphics/demo.gif)
 
 > [!WARNING]  
-> Due to recent updates in the Copilot's VSCode extension, functionality critical for GuardRails is no longer supported. Please hang on while we update GuardRails.   
+> Due to recent updates in the Copilot's VSCode extension, functionality critical for GuardRails is no longer supported. Please hang on while we update GuardRails. If you are interested in contributing, check out [this](https://github.com/mrigankpawagi/GuardRails/pull/6).
 
 ## Requirements
 
