@@ -5,7 +5,7 @@ VSCode extension to help developers write complete and unambiguous docstrings fo
 > [!IMPORTANT]
 > Our paper was presented at the 6th Annual COMPUTE Conference by ACM India. Check it out [here](https://dl.acm.org/doi/10.1145/3627217.3627234) (or [here](https://arxiv.org/abs/2312.08189) on arXiv).
 
-![Demo](https://raw.githubusercontent.com/mrigankpawagi/GuardRails/master/media/demo.gif)
+![Demo](https://raw.githubusercontent.com/mrigankpawagi/GuardRails/master/media/graphics/demo.gif)
 
 > [!WARNING]  
 > Due to recent updates in the Copilot's VSCode extension, functionality critical for GuardRails is no longer supported. Please hang on while we update GuardRails.   
