@@ -53,14 +53,9 @@ document.getElementById('addDoctest').addEventListener('click', function() {
     const functionName = document.getElementById('functionName').value || 'function_name';
     const doctest = createDoctest(functionName);
     const doc = docstringEditor.getValue();
-    const currentPos = docstringEditor.getCursor();
-    
-    // Insert doctest at cursor position or at the end
-    if (currentPos) {
-        docstringEditor.replaceRange('\n' + doctest, currentPos);
-    } else {
-        docstringEditor.setValue(doc + doctest);
-    }
+
+    // Insert doctest at the end
+    docstringEditor.setValue(doc + doctest);
 });
 
 // Update doctest examples when function name changes
