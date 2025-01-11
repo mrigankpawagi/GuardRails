@@ -2,7 +2,7 @@ document.getElementById('codeForm').addEventListener('submit', function(event) {
     event.preventDefault();
     
     var imports = importsEditor.getValue();
-    var functionName = document.getElementById('functionName').value;
+    var functionName = document.getElementById('functionName').value || "function_name";
     var arguments = document.getElementById('arguments').value;
     var returnType = document.getElementById('returnType').value;
     var docstring = docstringEditor.getValue();
