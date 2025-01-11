@@ -26,8 +26,12 @@
         "guardrails.whichpython": {
           "type": "string",
           "default": "python",
-          "description": "Path to Python interpreter",
-          "title": "GuardRails: Which Python"
+          "description": "Path to Python interpreter"
+        },
+        "guardrails.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Gemini API Key"
         }
       }
     },
@@ -35,6 +39,10 @@
       {
         "command": "guardrails.openPanel",
         "title": "Open GuardRails"
+      },
+      {
+        "command": "guardrails.installRequirements",
+        "title": "Install GuardRails Python Requirements"
       }
     ],
     "keybindings": [

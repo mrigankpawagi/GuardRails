@@ -37,6 +37,11 @@ class GuardRailsViewProvider implements vscode.WebviewViewProvider {
     }
 
     private async handleMessage(message: any) {
+        // Get GEMINI API key from VS Code configuration
+        const apiKey = vscode.workspace
+            .getConfiguration("guardrails")
+            .get("geminiApiKey", "");
+
         switch (message.command) {
             case "submitFunction":
                 const pythonPath = vscode.workspace
@@ -46,11 +51,17 @@ class GuardRailsViewProvider implements vscode.WebviewViewProvider {
                     this._extensionUri.fsPath,
                     "media",
                     "python",
-                    "main.py"
+                    "submit_function.py"
                 );
 
                 try {
-                    const python = child_process.spawn(pythonPath, [scriptPath]);
+                    const python = child_process.spawn(pythonPath, [scriptPath], {
+                        env: {
+                            ...process.env,
+                            // eslint-disable-next-line @typescript-eslint/naming-convention
+                            GEMINI_API_KEY: apiKey
+                        }
+                    });
 
                     python.stdin.write(JSON.stringify(message.data));
                     python.stdin.end();
@@ -63,20 +74,39 @@ class GuardRailsViewProvider implements vscode.WebviewViewProvider {
                     python.on("close", (code) => {
                         if (code === 0 && this._view) {
                             this._view.webview.postMessage({
-                                command: "pythonResult",
+                                command: "submitFunctionResult",
                                 data: JSON.parse(output),
                             });
                         } else {
-                            throw new Error(`Python process exited with code ${code}`);
+                            vscode.window.showErrorMessage("An error occurred.");
                         }
                     });
                 } catch (error: any) {
-                    vscode.window.showErrorMessage(
-                        "Failed to execute Python script: " + error.message
-                    );
+                    vscode.window.showErrorMessage("An error occurred.");
                 }
                 break;
         }
+    }
+}
+
+async function installRequirements() {
+    const pythonPath = vscode.workspace
+        .getConfiguration("guardrails")
+        .get("whichpython", "python");
+    
+    const requirementsPath = path.join(
+        extensionUri.fsPath,
+        "media",
+        "python",
+        "requirements.txt"
+    );
+
+    try {
+        const terminal = vscode.window.createTerminal("GuardRails Requirements");
+        terminal.show();
+        terminal.sendText(`${pythonPath} -m pip install -r "${requirementsPath}"`);
+    } catch (error: any) {
+        vscode.window.showErrorMessage("Failed to install requirements. Please check your Python installation.");
     }
 }
 
@@ -100,6 +130,11 @@ export function activate(context: vscode.ExtensionContext) {
                 "workbench.view.extension.guardrails-sidebar"
             );
         })
+    );
+
+    // Register command to install requirements
+    context.subscriptions.push(
+        vscode.commands.registerCommand("guardrails.installRequirements", installRequirements)
     );
 }
 
