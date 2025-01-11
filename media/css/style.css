@@ -1,0 +1,98 @@
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+}
+.function-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    font-family: monospace;
+    font-size: 14px;
+}
+.prefix {
+    background-color: #fff;
+    padding: 5px;
+}
+input[type="text"] {
+    font-family: monospace;
+    padding: 5px;
+    outline: none;
+    border: 0;
+}
+#functionName {
+    text-align: right;
+    color: #795E26;  /* Python function name color */
+}
+#arguments {
+    color: #001080;  /* Python parameter color */
+}
+#returnType {
+    color: #001080;  /* Same color as arguments */
+}
+.CodeMirror {
+    height: auto;
+    margin-top: 0;
+}
+.input-group {
+    margin-bottom: 10px;
+    background-color: #fff;
+    font-size: 14px;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+.docstring-wrapper {
+    font-family: monospace;
+    background-color: #fff;
+}
+.quotes {
+    color: #a50;
+    user-select: none;
+    padding: 4px 0;
+    white-space: pre;
+    background-color: #fff;
+}
+#docstringEditor .cm-s-default {
+    color: #a50; /* Python docstring color */
+}
+.no-bottom-margin {
+    margin-bottom: 0!important;
+}
+.function-input input[type="text"] {
+    width: auto;
+    min-width: 0;
+    flex-shrink: 1;
+}
+.imports-wrapper {
+    font-family: monospace;
+    margin-bottom: 0;
+}
+.readonly-line {
+    cursor: not-allowed;
+}
+.prefix.keyword {
+    color: #0000FF;  /* Python keyword color */
+}
+.prefix.punctuation {
+    color: #000;  /* Punctuation color */
+}
+.doctest-controls {
+    margin: 10px 0;
+    background-color: #fff;
+    padding: 10px;
+}
+.doctest-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.doctest-button:hover {
+    background-color: #45a049;
+}

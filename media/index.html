@@ -3,13 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="#{baseUri}/view.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="#{baseUri}/css/style.css">
 </head>
 <body>
-    <main>
-        <h2>GuardRails</h2>
-        <!-- Add your webview content here -->
-    </main>
-    <script src="#{baseUri}/view.js"></script>
+    <h1>GuardRails</h1>
+    <form id="codeForm">
+        <div class="input-group no-bottom-margin">
+            <div class="imports-wrapper">
+                <div id="importsEditor"></div>
+            </div>
+        </div>
+        <div class="input-group no-bottom-margin">
+            <div class="function-input no-bottom-margin">
+                <span class="prefix keyword">def</span>
+                <input autocomplete="off" type="text" id="functionName" placeholder="function_name">
+                <span class="prefix punctuation">(</span>
+                <input autocomplete="off" type="text" id="arguments" placeholder="arg1: type1, arg2: type2, ...">
+                <span class="prefix punctuation">)</span>
+                <input autocomplete="off" type="text" id="returnType" placeholder="-> return_type">
+                <span class="prefix punctuation">:</span>
+            </div>
+        </div>
+        
+        <div class="input-group">
+            <div class="docstring-wrapper">
+                <div class="quotes">    """</div>
+                <div id="docstringEditor"></div>
+                <div class="doctest-controls">
+                    <button type="button" class="doctest-button" id="addDoctest">Create Doctest</button>
+                </div>
+                <div class="quotes">    """</div>
+            </div>
+        </div>
+
+        <input type="submit" value="Submit">
+    </form>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script src="#{baseUri}/js/interface.js"></script>
+    <script src="#{baseUri}/js/main.js"></script>
 </body>
 </html>
