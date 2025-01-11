@@ -27,7 +27,6 @@ class GuardRailsViewProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.onDidReceiveMessage(
             async (message) => {
-                console.log("Extension received message:", message);
                 await this.handleMessage(message);
             },
             undefined,
@@ -38,7 +37,6 @@ class GuardRailsViewProvider implements vscode.WebviewViewProvider {
     }
 
     private async handleMessage(message: any) {
-        console.log("Received message:", message);
         switch (message.command) {
             case "submitFunction":
                 const pythonPath = vscode.workspace
