@@ -1,9 +1,3 @@
-
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    padding: 20px;
-}
 .function-input {
     display: flex;
     align-items: center;
@@ -15,15 +9,25 @@ body {
     background-color: #fff;
     padding: 5px;
 }
+.vscode-dark .prefix {
+    background-color: #1e1e1e;
+}
 input[type="text"] {
     font-family: monospace;
     padding: 5px;
     outline: none;
     border: 0;
 }
+.vscode-dark input[type="text"] {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
 #functionName {
     text-align: right;
     color: #795E26;  /* Python function name color */
+}
+.vscode-dark #functionName {
+    color: #dcdcaa;  /* Dark theme Python function color */
 }
 #arguments {
     color: #001080;  /* Python parameter color */
@@ -31,14 +35,24 @@ input[type="text"] {
 #returnType {
     color: #001080;  /* Same color as arguments */
 }
+.vscode-dark #arguments,
+.vscode-dark #returnType {
+    color: #9cdcfe;  /* Dark theme parameter color */
+}
 .CodeMirror {
     height: auto;
     margin-top: 0;
+}
+.vscode-dark .CodeMirror {
+    background-color: #1e1e1e;
 }
 .input-group {
     margin-bottom: 10px;
     background-color: #fff;
     font-size: 14px;
+}
+.vscode-dark .input-group {
+    background-color: #1e1e1e;
 }
 label {
     display: block;
@@ -49,6 +63,9 @@ label {
     font-family: monospace;
     background-color: #fff;
 }
+.vscode-dark .docstring-wrapper {
+    background-color: #1e1e1e;
+}
 .quotes {
     color: #a50;
     user-select: none;
@@ -56,8 +73,15 @@ label {
     white-space: pre;
     background-color: #fff;
 }
+.vscode-dark .quotes {
+    color: #ce9178;
+    background-color: #1e1e1e;
+}
 #docstringEditor .cm-s-default {
     color: #a50; /* Python docstring color */
+}
+.vscode-dark #docstringEditor .cm-s-default {
+    color: #ce9178; /* Dark theme Python docstring color */
 }
 .no-bottom-margin {
     margin-bottom: 0!important;
@@ -77,22 +101,41 @@ label {
 .prefix.keyword {
     color: #0000FF;  /* Python keyword color */
 }
+.vscode-dark .prefix.keyword {
+    color: #569cd6;  /* Dark theme Python keyword color */
+}
 .prefix.punctuation {
     color: #000;  /* Punctuation color */
+}
+.vscode-dark .prefix.punctuation {
+    color: #d4d4d4;  /* Dark theme punctuation color */
 }
 .doctest-controls {
     margin: 10px 0;
     background-color: #fff;
     padding: 10px;
+    padding-left: 35px;
 }
-.doctest-button {
-    background-color: #4CAF50;
-    color: white;
-    padding: 5px 10px;
+.vscode-dark .doctest-controls {
+    background-color: #1e1e1e;
+}
+button {
+    background-color: #007acc;
+    color: #ffffff;
+    padding: 4px 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: 2px;
     cursor: pointer;
+    font-size: 13px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
-.doctest-button:hover {
-    background-color: #45a049;
+.vscode-dark button {
+    background-color: #0e639c;
+    color: #ffffff;
+}
+button:hover {
+    background-color: #005999;
+}
+.vscode-dark button:hover {
+    background-color: #1177bb;
 }
