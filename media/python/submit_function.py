@@ -7,8 +7,7 @@ from google.ai.generativelanguage_v1beta.types import content
 from mutate import TypedMutGen
 from testing import Testing
 
-# genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-genai.configure(api_key="AIzaSyCL0khrsyNRrBgY08aeOdNwUfnqJt7HnOc")
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 # Number of contracts to generate
 CONTRACT_POOL_SIZE = 10
