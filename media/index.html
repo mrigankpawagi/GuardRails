@@ -10,6 +10,9 @@
 </head>
 <body>
     <h3>Provide your Function Description</h3>
+    <p>
+        Describe your function in the code editor below by providing the function signature and docstring. It is recommended to include type hints in the function signature and doctests in the docstring. You should also provide any necessary imports, global variables, or helper functions.
+    </p>
     <div id="codeContainer">
         <div class="input-group no-bottom-margin">
             <div class="imports-wrapper">
@@ -41,6 +44,15 @@
 
         <button type="button" id="submitButton">Submit</button>
     </div>
+
+    <div id="contractSection" style="display: none;">
+        <h3>Review and Edit Contract</h3>
+        <div class="contract-wrapper">
+            <div id="contractEditor"></div>
+        </div>
+        <button type="button" id="submitContract">Submit Contract</button>
+    </div>
+
     <script src="js/lib/codemirror.min.js"></script>
     <script src="js/lib/python.min.js"></script>
     <script src="js/interface.js"></script>

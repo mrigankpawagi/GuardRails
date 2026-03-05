@@ -139,3 +139,23 @@ button:hover {
 .vscode-dark button:hover {
     background-color: #1177bb;
 }
+
+.contract-wrapper {
+    font-family: monospace;
+    margin-bottom: 10px;
+    background-color: #fff;
+}
+
+.vscode-dark .contract-wrapper {
+    background-color: #1e1e1e;
+}
+
+#contractSection {
+    margin-top: 20px;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+}
+
+.vscode-dark #contractSection {
+    border-top-color: #3c3c3c;
+}

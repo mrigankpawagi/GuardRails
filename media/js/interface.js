@@ -24,6 +24,14 @@ var importsEditor = CodeMirror(document.getElementById('importsEditor'), {
     }
 });
 
+// Create contract editor
+var contractEditor = CodeMirror(document.getElementById('contractEditor'), {
+    mode: 'python',
+    lineNumbers: true,
+    theme: document.body.classList.contains('vscode-dark') ? 'monokai' : 'default',
+    indentUnit: 4
+});
+
 // Make first line read-only
 importsEditor.markText(
     {line: 0, ch: 0},
@@ -101,8 +109,10 @@ const observer = new MutationObserver(mutations => {
     mutations.forEach(mutation => {
         if (mutation.target.classList.contains('vscode-dark')) {
             importsEditor.setOption('theme', 'monokai');
+            contractEditor.setOption('theme', 'monokai');
         } else {
             importsEditor.setOption('theme', 'default');
+            contractEditor.setOption('theme', 'default');
         }
     });
 });
