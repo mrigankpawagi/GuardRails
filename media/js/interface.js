@@ -9,7 +9,7 @@ var docstringEditor = CodeMirror(document.getElementById('docstringEditor'), {
 var importsEditor = CodeMirror(document.getElementById('importsEditor'), {
     mode: 'python',
     lineNumbers: false,
-    theme: 'default',
+    theme: document.body.classList.contains('vscode-dark') ? 'monokai' : 'default',
     value: 'import typing\n\n# Add any imports from built-in modules\n# or add helper functions here\n',
     indentUnit: 4,
     extraKeys: {
@@ -53,14 +53,9 @@ document.getElementById('addDoctest').addEventListener('click', function() {
     const functionName = document.getElementById('functionName').value || 'function_name';
     const doctest = createDoctest(functionName);
     const doc = docstringEditor.getValue();
-    const currentPos = docstringEditor.getCursor();
-    
-    // Insert doctest at cursor position or at the end
-    if (currentPos) {
-        docstringEditor.replaceRange('\n' + doctest, currentPos);
-    } else {
-        docstringEditor.setValue(doc + doctest);
-    }
+
+    // Insert doctest at the end
+    docstringEditor.setValue(doc + doctest);
 });
 
 // Update doctest examples when function name changes
@@ -99,4 +94,20 @@ document.getElementById('returnType').addEventListener('input', function() {
 });
 document.getElementById('returnType').addEventListener('change', function() {
     updateWidth(this);
+});
+
+// Add theme observer
+const observer = new MutationObserver(mutations => {
+    mutations.forEach(mutation => {
+        if (mutation.target.classList.contains('vscode-dark')) {
+            importsEditor.setOption('theme', 'monokai');
+        } else {
+            importsEditor.setOption('theme', 'default');
+        }
+    });
+});
+
+observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class']
 });

@@ -16,30 +16,61 @@
     "Education"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onView:guardrails.sidebar"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Setup"
+      "title": "GuardRails",
+      "properties": {
+        "guardrails.whichpython": {
+          "type": "string",
+          "default": "python",
+          "description": "Path to Python interpreter"
+        },
+        "guardrails.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Gemini API Key"
+        }
+      }
     },
+    "commands": [
+      {
+        "command": "guardrails.openPanel",
+        "title": "Open GuardRails"
+      },
+      {
+        "command": "guardrails.installRequirements",
+        "title": "Install GuardRails Python Requirements"
+      }
+    ],
     "keybindings": [
       {
-        "command": "vsprutor.captureCopilotPanel",
-        "key": "ctrl+Enter",
-        "when": "editorTextFocus && github.copilot.activated && !inInteractiveInput && !interactiveEditorFocused"
-      },
-      {
-        "command": "vsprutor.testCaseChecker",
-        "key": "ctrl+shift+oem_2",
-        "when": "github.copilot.activated"
-      },
-      {
-        "command": "vsprutor.testCaseCheckerMUT",
-        "key": "ctrl+shift+oem_1",
-        "when": "github.copilot.activated"
+        "command": "guardrails.openPanel",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "guardrails-sidebar",
+          "title": "GuardRails",
+          "icon": "icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "guardrails-sidebar": [
+        {
+          "type": "webview",
+          "id": "guardrails.sidebar",
+          "name": "GuardRails",
+          "when": "true"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
